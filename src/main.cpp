@@ -40,7 +40,7 @@ float lastFrame = 0.0f;
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(.1f, .1f, .1f);
     Camera camera;
-    ProgramState() : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
+    ProgramState() : camera(glm::vec3(0.0f, 0.0f, 7.0f)) {}
 
     std::vector<std::string> faces;
     unsigned int cubemapTexture;
@@ -89,15 +89,47 @@ int main() {
     // coordinate system
     float vertices[] = {
             // positions                    // colors
-            -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // x
-            0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // x
-            0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // x
-            0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // y
-            0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // y
-            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // y
-            -0.4f, 0.4f, 0.0f, 0.0f, 1.0f, 0.0f, // z
-            0.4f, -0.4f, 0.0f, 0.0f, 1.0f, 0.0f, // z
-            0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f // z
+            -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f,
+
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, 0.0f,
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,0.0f,
+
+            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
+            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,0.0f,
+            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
+
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,0.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, 0.0f,0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
+
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
+            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,0.0f,
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,0.0f,
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
+
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f
     };
 
     // skybox
@@ -168,7 +200,7 @@ int main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    vector<std::string> faces
+    programState->faces =
             {
                     FileSystem::getPath("resources/textures/skybox/right.jpg"),
                     FileSystem::getPath("resources/textures/skybox/left.jpg"),
@@ -178,7 +210,7 @@ int main() {
                     FileSystem::getPath("resources/textures/skybox/back.jpg")
             };
 
-    unsigned int cubemapTexture = loadCubemap(faces);
+   programState->cubemapTexture = loadCubemap(programState->faces);
 
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
@@ -208,7 +240,7 @@ int main() {
 
         // coordinate system
         glBindVertexArray(VAO);
-        glDrawArrays(GL_LINES, 0, 9);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
         //draw skybox in the end
@@ -223,7 +255,7 @@ int main() {
         // skybox cube
         glBindVertexArray(skyboxVAO);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, programState->cubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
         glDepthMask(GL_TRUE);
