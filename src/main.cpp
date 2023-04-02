@@ -83,137 +83,140 @@ int main() {
     programState = new ProgramState;
 
     // build and compile shaders
-    Shader ourShader("resources/shaders/vertexShader.vs", "resources/shaders/fragmentShader.fs");
-    Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
+    Shader cubeShader("resources/shaders/cube.vs", "resources/shaders/cube.fs");
+    Shader skybox1Shader("resources/shaders/skybox1.vs", "resources/shaders/skybox1.fs");
 
     // coordinate system
-    float vertices[] = {
-            // positions                    // colors
-            -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f,
+    float cube_vertices[] = {
+            // positions                    // normals
+            -1.5f, -1.5f, -1.5f,  .0f, 0.0f, -1.0f,
+            1.5f, -1.5f, -1.5f,  .0f, 0.0f, -1.0f,
+            1.5f,  1.5f, -1.5f,  .0f, .0f, -1.0f,
+            1.5f,  1.5f, -1.5f,  .0f, .0f, -1.0f,
+            -1.5f,  1.5f, -1.5f,  0.0f, .0f, -1.0f,
+            -1.5f, -1.5f, -1.5f,  0.0f, 0.0f, -1.0f,
 
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,0.0f,
+            -1.5f, -1.5f,  1.5f,  0.0f, 0.0f, 1.0f,
+            1.5f, -1.5f,  1.5f,  .0f, 0.0f, 1.0f,
+            1.5f,  1.5f,  1.5f,  .0f, .0f, 1.0f,
+            1.5f,  1.5f,  1.5f,  .0f, .0f, 1.0f,
+            -1.5f,  1.5f,  1.5f,  0.0f, .0f,1.0f,
+            -1.5f, -1.5f,  1.5f,  0.0f, 0.0f,1.0f,
 
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,0.0f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
+            -1.5f,  1.5f,  1.5f,  -1.0f, 0.0f,0.0f,
+            -1.5f,  1.5f, -1.5f,  -1.0f, .0f,0.0f,
+            -1.5f, -1.5f, -1.5f,  -1.0f, .0f,0.0f,
+            -1.5f, -1.5f, -1.5f,  -1.0f, .0f,0.0f,
+            -1.5f, -1.5f,  1.5f,  -1.0f, 0.0f,0.0f,
+            -1.5f,  1.5f,  1.5f,  -1.0f, 0.0f,0.0f,
 
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,0.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
-            0.5f, -0.5f,  0.5f,  0.0f, 0.0f,0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
+            1.5f,  1.5f,  1.5f,  1.0f, 0.0f,0.0f,
+            1.5f,  1.5f, -1.5f,  1.0f, .0f,0.0f,
+            1.5f, -1.5f, -1.5f,  1.0f, .0f,0.0f,
+            1.5f, -1.5f, -1.5f,  1.0f, .0f,0.0f,
+            1.5f, -1.5f,  1.5f,  1.0f, 0.0f,0.0f,
+            1.5f,  1.5f,  1.5f,  1.0f, 0.0f,0.0f,
 
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,0.0f,
+            -1.5f, -1.5f, -1.5f,  0.0f, -1.0f,0.0f,
+            1.5f, -1.5f, -1.5f,  .0f, -1.0f,0.0f,
+            1.5f, -1.5f,  1.5f,  .0f, -1.0f,0.0f,
+            1.5f, -1.5f,  1.5f,  .0f, -1.0f,0.0f,
+            -1.5f, -1.5f,  1.5f,  0.0f, -1.0f,0.0f,
+            -1.5f, -1.5f, -1.5f,  0.0f, -1.0f,0.0f,
 
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f
+            -1.5f,  1.5f, -1.5f,  0.0f, 1.0f,0.0f,
+            1.5f,  1.5f, -1.5f,  .0f, 1.0f,0.0f,
+            1.5f,  1.5f,  1.5f,  .0f, 1.0f,0.0f,
+            1.5f,  1.5f,  1.5f,  .0f, 1.0f,0.0f,
+            -1.5f,  1.5f,  1.5f,  0.0f, 1.0f,0.0f,
+            -1.5f,  1.5f, -1.5f,  0.0f, 1.0f, 0.0f
     };
 
     // skybox
-    float skyboxVertices[] = {
+    float skybox1Vertices[] = {
             // positions
-            -1.0f,  1.0f, -1.0f,
-            -1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
-            1.0f,  1.0f, -1.0f,
-            -1.0f,  1.0f, -1.0f,
+            -2.0f,  2.0f, -2.0f,
+            -2.0f, -2.0f, -2.0f,
+            2.0f, -2.0f, -2.0f,
+            2.0f, -2.0f, -2.0f,
+            2.0f,  2.0f, -2.0f,
+            -2.0f,  2.0f, -2.0f,
 
-            -1.0f, -1.0f,  1.0f,
-            -1.0f, -1.0f, -1.0f,
-            -1.0f,  1.0f, -1.0f,
-            -1.0f,  1.0f, -1.0f,
-            -1.0f,  1.0f,  1.0f,
-            -1.0f, -1.0f,  1.0f,
+            -2.0f, -2.0f,  2.0f,
+            -2.0f, -2.0f, -2.0f,
+            -2.0f,  2.0f, -2.0f,
+            -2.0f,  2.0f, -2.0f,
+            -2.0f,  2.0f,  2.0f,
+            -2.0f, -2.0f,  2.0f,
 
-            1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f,  1.0f,
-            1.0f,  1.0f,  1.0f,
-            1.0f,  1.0f,  1.0f,
-            1.0f,  1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
+            2.0f, -2.0f, -2.0f,
+            2.0f, -2.0f,  2.0f,
+            2.0f,  2.0f,  2.0f,
+            2.0f,  2.0f,  2.0f,
+            2.0f,  2.0f, -2.0f,
+            2.0f, -2.0f, -2.0f,
 
-            -1.0f, -1.0f,  1.0f,
-            -1.0f,  1.0f,  1.0f,
-            1.0f,  1.0f,  1.0f,
-            1.0f,  1.0f,  1.0f,
-            1.0f, -1.0f,  1.0f,
-            -1.0f, -1.0f,  1.0f,
+            -2.0f, -2.0f,  2.0f,
+            -2.0f,  2.0f,  2.0f,
+            2.0f,  2.0f,  2.0f,
+            2.0f,  2.0f,  2.0f,
+            2.0f, -2.0f,  2.0f,
+            -2.0f, -2.0f,  2.0f,
 
-            -1.0f,  1.0f, -1.0f,
-            1.0f,  1.0f, -1.0f,
-            1.0f,  1.0f,  1.0f,
-            1.0f,  1.0f,  1.0f,
-            -1.0f,  1.0f,  1.0f,
-            -1.0f,  1.0f, -1.0f,
+            -2.0f,  2.0f, -2.0f,
+            2.0f,  2.0f, -2.0f,
+            2.0f,  2.0f,  2.0f,
+            2.0f,  2.0f,  2.0f,
+            -2.0f,  2.0f,  2.0f,
+            -2.0f,  2.0f, -2.0f,
 
-            -1.0f, -1.0f, -1.0f,
-            -1.0f, -1.0f,  1.0f,
-            1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
-            -1.0f, -1.0f,  1.0f,
-            1.0f, -1.0f,  1.0f
+            -2.0f, -2.0f, -2.0f,
+            -2.0f, -2.0f,  2.0f,
+            2.0f, -2.0f, -2.0f,
+            2.0f, -2.0f, -2.0f,
+            -2.0f, -2.0f,  2.0f,
+            2.0f, -2.0f,  2.0f
     };
     
     // coordinate system's VBO and VAO
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    unsigned int cubeVBO, cubeVAO;
+    glGenVertexArrays(1, &cubeVAO);
+    glGenBuffers(1, &cubeVBO);
+    glBindVertexArray(cubeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     // skybox
-    unsigned int skyboxVAO, skyboxVBO;
-    glGenVertexArrays(1, &skyboxVAO);
-    glGenBuffers(1, &skyboxVBO);
-    glBindVertexArray(skyboxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    unsigned int skybox1VAO, skybox1VBO;
+    glGenVertexArrays(1, &skybox1VAO);
+    glGenBuffers(1, &skybox1VBO);
+    glBindVertexArray(skybox1VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skybox1VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skybox1Vertices), &skybox1Vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
     programState->faces =
             {
-                    FileSystem::getPath("resources/textures/skybox/right.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/left.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/top.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/bottom.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/front.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/back.jpg")
+                    FileSystem::getPath("resources/textures/skybox1/right.jpg"),
+                    FileSystem::getPath("resources/textures/skybox1/left.jpg"),
+                    FileSystem::getPath("resources/textures/skybox1/top.jpg"),
+                    FileSystem::getPath("resources/textures/skybox1/bottom.jpg"),
+                    FileSystem::getPath("resources/textures/skybox1/front.jpg"),
+                    FileSystem::getPath("resources/textures/skybox1/back.jpg")
             };
 
    programState->cubemapTexture = loadCubemap(programState->faces);
 
-    skyboxShader.use();
-    skyboxShader.setInt("skybox", 0);
+   cubeShader.use();
+   cubeShader.setInt("skybox", 0);
+
+   skybox1Shader.use();
+   skybox1Shader.setInt("skybox", 0);
 
     // render loop
     while (!glfwWindowShouldClose(window)) {
@@ -232,45 +235,50 @@ int main() {
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f , 100.0f);
         glm::mat4 view = programState->camera.GetViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
-        
-        ourShader.use();
-        ourShader.setMat4("projection", projection);
-        ourShader.setMat4("view", view);
-        ourShader.setMat4("model", model);
 
-        // coordinate system
-        glBindVertexArray(VAO);
+        cubeShader.use();
+        cubeShader.setMat4("projection", projection);
+        cubeShader.setMat4("view", view);
+        cubeShader.setMat4("model", model);
+        cubeShader.setVec3("cameraPos", programState->camera.Position);
+
+        // cube
+        glBindVertexArray(cubeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, programState->cubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
         //draw skybox in the end
 
-        glDepthMask(GL_FALSE);
+//        glDepthMask(GL_FALSE);
         glDepthFunc(GL_LEQUAL);
-        skyboxShader.use();
+        skybox1Shader.use();
         view = glm::mat4(glm::mat3(programState->camera.GetViewMatrix()));
-        skyboxShader.setMat4("view", view);
-        skyboxShader.setMat4("projection", projection);
+        skybox1Shader.setMat4("view", view);
+        skybox1Shader.setMat4("projection", projection);
 
         // skybox cube
-        glBindVertexArray(skyboxVAO);
+        glBindVertexArray(skybox1VAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, programState->cubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
-        glDepthMask(GL_TRUE);
+//        glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+//    ImGui_ImplOpenGL3_Shutdown();
+//    ImGui_ImplGlfw_Shutdown();
+//    ImGui::DestroyContext();
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &cubeVAO);
+    glDeleteVertexArrays(1, &skybox1VAO);
+    glDeleteBuffers(1, &cubeVBO);
+    glDeleteBuffers(1, &skybox1VAO);
 
     delete programState;
 
