@@ -44,6 +44,9 @@ struct ProgramState {
 
     std::vector<std::string> faces;
     unsigned int cubemapTexture;
+
+    std::vector<std::string> inner_faces;
+    unsigned int inner_cubemapTexture;
 };
 
 ProgramState *programState;
@@ -85,143 +88,144 @@ int main() {
     // build and compile shaders
     Shader cubeShader("resources/shaders/cube.vs", "resources/shaders/cube.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
-    Shader miniCubeShader("resources/shaders/miniCube.vs", "resources/shaders/miniCube.fs");
+    Shader inner_skyboxShader("resources/shaders/inner_skybox.vs", "resources/shaders/inner_skybox.fs");
 
     // coordinate system
     float cube_vertices[] = {
             // positions                    // normals
-            -15.5f, -15.5, -15.5,  .0f, 0.0f, -1.0f,
-            15.5f, -15.5, -15.5,  .0f, 0.0f, -1.0f,
-            15.5f,  15.5, -15.5,  .0f, .0f, -1.0f,
-            15.5f,  15.5, -15.5,  .0f, .0f, -1.0f,
-            -15.5f,  15.5, -15.5,  0.0f, .0f, -1.0f,
-            -15.5f, -15.5, -15.5,  0.0f, 0.0f, -1.0f,
+            -5.0f, -5.0, -5.0,  .0f, 0.0f, -1.0f,
+            5.0f, -5.0, -5.0,  .0f, 0.0f, -1.0f,
+            5.0f,  5.0, -5.0,  .0f, .0f, -1.0f,
+            5.0f,  5.0, -5.0,  .0f, .0f, -1.0f,
+            -5.0f,  5.0, -5.0,  0.0f, .0f, -1.0f,
+            -5.0f, -5.0, -5.0,  0.0f, 0.0f, -1.0f,
 
-            -15.5, -15.5,  15.5,  0.0f, 0.0f, 1.0f,
-            15.5, -15.5,  15.5,  .0f, 0.0f, 1.0f,
-            15.5,  15.5,  15.5,  .0f, .0f, 1.0f,
-            15.5,  15.5,  15.5,  .0f, .0f, 1.0f,
-            -15.5,  15.5,  15.5,  0.0f, .0f,1.0f,
-            -15.5, -15.5,  15.5,  0.0f, 0.0f,1.0f,
+            -5.0, -5.0,  5.0,  0.0f, 0.0f, 1.0f,
+            5.0, -5.0,  5.0,  .0f, 0.0f, 1.0f,
+            5.0,  5.0,  5.0,  .0f, .0f, 1.0f,
+            5.0,  5.0,  5.0,  .0f, .0f, 1.0f,
+            -5.0,  5.0,  5.0,  0.0f, .0f,1.0f,
+            -5.0, -5.0,  5.0,  0.0f, 0.0f,1.0f,
 
-            -15.5,  15.5,  15.5,  -1.0f, 0.0f,0.0f,
-            -15.5,  15.5, -15.5,  -1.0f, .0f,0.0f,
-            -15.5, -15.5, -15.5,  -1.0f, .0f,0.0f,
-            -15.5, -15.5, -15.5,  -1.0f, .0f,0.0f,
-            -15.5, -15.5,  15.5,  -1.0f, 0.0f,0.0f,
-            -15.5,  15.5,  15.5,  -1.0f, 0.0f,0.0f,
+            -5.0,  5.0,  5.0,  -1.0f, 0.0f,0.0f,
+            -5.0,  5.0, -5.0,  -1.0f, .0f,0.0f,
+            -5.0, -5.0, -5.0,  -1.0f, .0f,0.0f,
+            -5.0, -5.0, -5.0,  -1.0f, .0f,0.0f,
+            -5.0, -5.0,  5.0,  -1.0f, 0.0f,0.0f,
+            -5.0,  5.0,  5.0,  -1.0f, 0.0f,0.0f,
 
-            15.5,  15.5,  15.5,  1.0f, 0.0f,0.0f,
-            15.5,  15.5, -15.5,  1.0f, .0f,0.0f,
-            15.5, -15.5, -15.5,  1.0f, .0f,0.0f,
-            15.5, -15.5, -15.5,  1.0f, .0f,0.0f,
-            15.5, -15.5,  15.5,  1.0f, 0.0f,0.0f,
-            15.5,  15.5,  15.5,  1.0f, 0.0f,0.0f,
+            5.0,  5.0,  5.0,  1.0f, 0.0f,0.0f,
+            5.0,  5.0, -5.0,  1.0f, .0f,0.0f,
+            5.0, -5.0, -5.0,  1.0f, .0f,0.0f,
+            5.0, -5.0, -5.0,  1.0f, .0f,0.0f,
+            5.0, -5.0,  5.0,  1.0f, 0.0f,0.0f,
+            5.0,  5.0,  5.0,  1.0f, 0.0f,0.0f,
 
-            -15.5, -15.5, -15.5,  0.0f, -1.0f,0.0f,
-            15.5, -15.5, -15.5,  .0f, -1.0f,0.0f,
-            15.5, -15.5,  15.5,  .0f, -1.0f,0.0f,
-            15.5, -15.5,  15.5,  .0f, -1.0f,0.0f,
-            -15.5, -15.5,  15.5,  0.0f, -1.0f,0.0f,
-            -15.5, -15.5, -15.5,  0.0f, -1.0f,0.0f,
+            -5.0, -5.0, -5.0,  0.0f, -1.0f,0.0f,
+            5.0, -5.0, -5.0,  .0f, -1.0f,0.0f,
+            5.0, -5.0,  5.0,  .0f, -1.0f,0.0f,
+            5.0, -5.0,  5.0,  .0f, -1.0f,0.0f,
+            -5.0, -5.0,  5.0,  0.0f, -1.0f,0.0f,
+            -5.0, -5.0, -5.0,  0.0f, -1.0f,0.0f,
 
-            -15.5,  15.5, -15.5,  0.0f, 1.0f,0.0f,
-            15.5,  15.5, -15.5,  .0f, 1.0f,0.0f,
-            15.5,  15.5,  15.5,  .0f, 1.0f,0.0f,
-            15.5,  15.5,  15.5,  .0f, 1.0f,0.0f,
-            -15.5,  15.5,  15.5,  0.0f, 1.0f,0.0f,
-            -15.5,  15.5, -15.5f,  0.0f, 1.0f, 0.0f
+            -5.0,  5.0, -5.0,  0.0f, 1.0f,0.0f,
+            5.0,  5.0, -5.0,  .0f, 1.0f,0.0f,
+            5.0,  5.0,  5.0,  .0f, 1.0f,0.0f,
+            5.0,  5.0,  5.0,  .0f, 1.0f,0.0f,
+            -5.0,  5.0,  5.0,  0.0f, 1.0f,0.0f,
+            -5.0,  5.0, -5.0f,  0.0f, 1.0f, 0.0f
     };
 
-    float mini_cube_vertices[] = {
-            // positions                    // colors
-            -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, .0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 0.0f, .0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, .0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, .0f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, .0f,
-            -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, .0f,
 
-            -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, .0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,.0f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 1.0f,.0f,
-            -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,.0f,
+    float inner_skybox_vertices[] = {
+            // positions
+            -5.0f,  5.0f, -5.0f,
+            -5.0f, -5.0f, -5.0f,
+            5.0f, -5.0f, -5.0f,
+            5.0f, -5.0f, -5.0f,
+            5.0f,  5.0f, -5.0f,
+            -5.0f,  5.0f, -5.0f,
 
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,.0f,
-            -0.5f, -0.5f, -0.5f,  1.0f, 1.0f,.0f,
-            -0.5f, -0.5f, -0.5f,  1.0f, 1.0f,.0f,
-            -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,.0f,
+            -5.0f, -5.0f,  5.0f,
+            -5.0f, -5.0f, -5.0f,
+            -5.0f,  5.0f, -5.0f,
+            -5.0f,  5.0f, -5.0f,
+            -5.0f,  5.0f,  5.0f,
+            -5.0f, -5.0f,  5.0f,
 
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,.0f,
+            5.0f, -5.0f, -5.0f,
+            5.0f, -5.0f,  5.0f,
+            5.0f,  5.0f,  5.0f,
+            5.0f,  5.0f,  5.0f,
+            5.0f,  5.0f, -5.0f,
+            5.0f, -5.0f, -5.0f,
 
-            -0.5f, -0.5f, -0.5f,  1.0f, 1.0f,.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            -0.5f, -0.5f, -0.5f,  1.0f, 1.0f,.0f,
+            -5.0f, -5.0f,  5.0f,
+            -5.0f,  5.0f,  5.0f,
+            5.0f,  5.0f,  5.0f,
+            5.0f,  5.0f,  5.0f,
+            5.0f, -5.0f,  5.0f,
+            -5.0f, -5.0f,  5.0f,
 
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,.0f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, .0f
+            -5.0f,  5.0f, -5.0f,
+            5.0f,  5.0f, -5.0f,
+            5.0f,  5.0f,  5.0f,
+            5.0f,  5.0f,  5.0f,
+            -5.0f,  5.0f,  5.0f,
+            -5.0f,  5.0f, -5.0f,
+
+            -5.0f, -5.0f, -5.0f,
+            -5.0f, -5.0f,  5.0f,
+            5.0f, -5.0f, -5.0f,
+            5.0f, -5.00f, -5.00f,
+            -5.00f, -5.0f,  5.0f,
+            5.0f, -5.0f,  5.0f
     };
 
     // skybox
     float skyboxVertices[] = {
             // positions
-            -20.f,  20.f, -20.f,
-            -20.f, -20.f, -20.f,
-            20.f, -20.f, -20.f,
-            20.f, -20.f, -20.f,
-            20.f,  20.f, -20.f,
-            -20.f,  20.f, -20.f,
+            -10.f,  10.f, -10.f,
+            -10.f, -10.f, -10.f,
+            10.f, -10.f, -10.f,
+            10.f, -10.f, -10.f,
+            10.f,  10.f, -10.f,
+            -10.f,  10.f, -10.f,
 
-            -20.f, -20.f,  20.f,
-            -20.f, -20.f, -20.f,
-            -20.f,  20.f, -20.f,
-            -20.f,  20.f, -20.f,
-            -20.f,  20.f,  20.f,
-            -20.f, -20.f,  20.f,
+            -10.f, -10.f,  10.f,
+            -10.f, -10.f, -10.f,
+            -10.f,  10.f, -10.f,
+            -10.f,  10.f, -10.f,
+            -10.f,  10.f,  10.f,
+            -10.f, -10.f,  10.f,
 
-            20.f, -20.f, -20.f,
-            20.f, -20.f,  20.f,
-            20.f,  20.f,  20.f,
-            20.f,  20.f,  20.f,
-            20.f,  20.f, -20.f,
-            20.f, -20.f, -20.f,
+            10.f, -10.f, -10.f,
+            10.f, -10.f,  10.f,
+            10.f,  10.f,  10.f,
+            10.f,  10.f,  10.f,
+            10.f,  10.f, -10.f,
+            10.f, -10.f, -10.f,
 
-            -20.f, -20.f,  20.f,
-            -20.f,  20.f,  20.f,
-            20.f,  20.f,  20.f,
-            20.f,  20.f,  20.f,
-            20.f, -20.f,  20.f,
-            -20.f, -20.f,  20.f,
+            -10.f, -10.f,  10.f,
+            -10.f,  10.f,  10.f,
+            10.f,  10.f,  10.f,
+            10.f,  10.f,  10.f,
+            10.f, -10.f,  10.f,
+            -10.f, -10.f,  10.f,
 
-            -20.f,  20.f, -20.f,
-            20.f,  20.f, -20.f,
-            20.f,  20.f,  20.f,
-            20.f,  20.f,  20.f,
-            -20.f,  20.f,  20.f,
-            -20.f,  20.f, -20.f,
+            -10.f,  10.f, -10.f,
+            10.f,  10.f, -10.f,
+            10.f,  10.f,  10.f,
+            10.f,  10.f,  10.f,
+            -10.f,  10.f,  10.f,
+            -10.f,  10.f, -10.f,
 
-            -20.f, -20.f, -20.f,
-            -20.f, -20.f,  20.f,
-            20.f, -20.f, -20.f,
-            20.f, -20.0f, -20.0f,
-            -20.0f, -20.f,  20.f,
-            20.f, -20.f,  20.f
+            -10.f, -10.f, -10.f,
+            -10.f, -10.f,  10.f,
+            10.f, -10.f, -10.f,
+            10.f, -10.0f, -10.0f,
+            -10.0f, -10.f,  10.f,
+            10.f, -10.f,  10.f
     };
 
     // cube VBO and VAO
@@ -236,17 +240,15 @@ int main() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // mini cube VBO and VAO
-    unsigned int mini_cubeVBO, mini_cubeVAO;
-    glGenVertexArrays(1, &mini_cubeVAO);
-    glGenBuffers(1, &mini_cubeVBO);
-    glBindVertexArray(mini_cubeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, mini_cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mini_cube_vertices), mini_cube_vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    // inner skybox VBO and VAO
+    unsigned int inner_skyboxVBO, inner_skyboxVAO;
+    glGenVertexArrays(1, &inner_skyboxVAO);
+    glGenBuffers(1, &inner_skyboxVBO);
+    glBindVertexArray(inner_skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, inner_skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(inner_skybox_vertices), inner_skybox_vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
 
     // skybox
     unsigned int skyboxVAO, skyboxVBO;
@@ -258,7 +260,7 @@ int main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    programState->faces =
+    programState->inner_faces =
             {
                     FileSystem::getPath("resources/textures/skybox/right.jpg"),
                     FileSystem::getPath("resources/textures/skybox/left.jpg"),
@@ -268,13 +270,28 @@ int main() {
                     FileSystem::getPath("resources/textures/skybox/back.jpg")
             };
 
-    programState->cubemapTexture = loadCubemap(programState->faces);
+    programState->inner_cubemapTexture = loadCubemap(programState->inner_faces);
 
     cubeShader.use();
     cubeShader.setInt("skybox", 0);
 
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
+
+    programState->faces =
+            {
+                    FileSystem::getPath("resources/textures/inner_skybox/right.jpg"),
+                    FileSystem::getPath("resources/textures/inner_skybox/left.jpg"),
+                    FileSystem::getPath("resources/textures/inner_skybox/top.jpg"),
+                    FileSystem::getPath("resources/textures/inner_skybox/bottom.jpg"),
+                    FileSystem::getPath("resources/textures/inner_skybox/front.jpg"),
+                    FileSystem::getPath("resources/textures/inner_skybox/back.jpg")
+            };
+
+    programState->cubemapTexture = loadCubemap(programState->faces);
+
+//    inner_skyboxShader.use();
+    inner_skyboxShader.setInt("skybox", 0);
 
     // render loop
     while (!glfwWindowShouldClose(window)) {
@@ -307,20 +324,8 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
-        // mini cube
-
-        miniCubeShader.use();
-        miniCubeShader.setMat4("projection", projection);
-        miniCubeShader.setMat4("view", view);
-        model = glm::mat4(1.0f);
-        miniCubeShader.setMat4("model", model);
-
-        glBindVertexArray(mini_cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-
         //draw skybox in the end
-
+        // main skybox
         glDepthMask(GL_FALSE);
         glDepthFunc(GL_LEQUAL);
         skyboxShader.use();
@@ -328,7 +333,6 @@ int main() {
         skyboxShader.setMat4("view", view);
         skyboxShader.setMat4("projection", projection);
 
-        // skybox cube
         glBindVertexArray(skyboxVAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, programState->cubemapTexture);
@@ -336,6 +340,25 @@ int main() {
         glBindVertexArray(0);
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
+
+        // inner skybox
+        glDepthMask(GL_FALSE);
+        glDepthFunc(GL_LEQUAL);
+        inner_skyboxShader.use();
+        view = glm::mat4(glm::mat3(programState->camera.GetViewMatrix()));
+        inner_skyboxShader.setMat4("projection", projection);
+        inner_skyboxShader.setMat4("view", view);
+
+        glBindVertexArray(inner_skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, programState->inner_cubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
+
+        // skybox end
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -347,10 +370,10 @@ int main() {
 
     glDeleteVertexArrays(1, &cubeVAO);
     glDeleteVertexArrays(1, &skyboxVAO);
-    glDeleteVertexArrays(1, &mini_cubeVAO);
+    glDeleteVertexArrays(1, &inner_skyboxVAO);
     glDeleteBuffers(1, &cubeVBO);
     glDeleteBuffers(1, &skyboxVBO);
-    glDeleteBuffers(1, &mini_cubeVBO);
+    glDeleteBuffers(1, &inner_skyboxVBO);
 
     delete programState;
 
