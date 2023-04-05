@@ -40,7 +40,7 @@ float lastFrame = 0.0f;
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(.1f, .1f, .1f);
     Camera camera;
-    ProgramState() : camera(glm::vec3(0.0f, 0.0f, 10.0f)) {}
+    ProgramState() : camera(glm::vec3(0.0f, 0.0f, 20.0f)) {}
 
     std::vector<std::string> faces;
     unsigned int cubemapTexture;
@@ -81,6 +81,7 @@ int main() {
         return -1;
     }
 
+
     glEnable(GL_DEPTH_TEST);
 
     programState = new ProgramState;
@@ -89,97 +90,100 @@ int main() {
     Shader cubeShader("resources/shaders/cube.vs", "resources/shaders/cube.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
     Shader inner_skyboxShader("resources/shaders/inner_skybox.vs", "resources/shaders/inner_skybox.fs");
+    Shader diamondShader("resources/shaders/diamond.vs", "resources/shaders/diamond.fs");
+
+    Model diamond(FileSystem::getPath("resources/objects/diamond/Diamond.obj"));
 
     // coordinate system
     float cube_vertices[] = {
             // positions                    // normals
-            -5.0f, -5.0, -5.0,  .0f, 0.0f, -1.0f,
-            5.0f, -5.0, -5.0,  .0f, 0.0f, -1.0f,
-            5.0f,  5.0, -5.0,  .0f, .0f, -1.0f,
-            5.0f,  5.0, -5.0,  .0f, .0f, -1.0f,
-            -5.0f,  5.0, -5.0,  0.0f, .0f, -1.0f,
-            -5.0f, -5.0, -5.0,  0.0f, 0.0f, -1.0f,
+            -7.0f, -7.0, -7.0,  .0f, 0.0f, -1.0f,
+            7.0f, -7.0, -7.0,  .0f, 0.0f, -1.0f,
+            7.0f,  7.0, -7.0,  .0f, .0f, -1.0f,
+            7.0f,  7.0, -7.0,  .0f, .0f, -1.0f,
+            -7.0f,  7.0, -7.0,  0.0f, .0f, -1.0f,
+            -7.0f, -7.0, -7.0,  0.0f, 0.0f, -1.0f,
 
-            -5.0, -5.0,  5.0,  0.0f, 0.0f, 1.0f,
-            5.0, -5.0,  5.0,  .0f, 0.0f, 1.0f,
-            5.0,  5.0,  5.0,  .0f, .0f, 1.0f,
-            5.0,  5.0,  5.0,  .0f, .0f, 1.0f,
-            -5.0,  5.0,  5.0,  0.0f, .0f,1.0f,
-            -5.0, -5.0,  5.0,  0.0f, 0.0f,1.0f,
+            -7.0, -7.0,  7.0,  0.0f, 0.0f, 1.0f,
+            7.0, -7.0,  7.0,  .0f, 0.0f, 1.0f,
+            7.0,  7.0,  7.0,  .0f, .0f, 1.0f,
+            7.0,  7.0,  7.0,  .0f, .0f, 1.0f,
+            -7.0,  7.0,  7.0,  0.0f, .0f,1.0f,
+            -7.0, -7.0,  7.0,  0.0f, 0.0f,1.0f,
 
-            -5.0,  5.0,  5.0,  -1.0f, 0.0f,0.0f,
-            -5.0,  5.0, -5.0,  -1.0f, .0f,0.0f,
-            -5.0, -5.0, -5.0,  -1.0f, .0f,0.0f,
-            -5.0, -5.0, -5.0,  -1.0f, .0f,0.0f,
-            -5.0, -5.0,  5.0,  -1.0f, 0.0f,0.0f,
-            -5.0,  5.0,  5.0,  -1.0f, 0.0f,0.0f,
+            -7.0,  7.0,  7.0,  -1.0f, 0.0f,0.0f,
+            -7.0,  7.0, -7.0,  -1.0f, .0f,0.0f,
+            -7.0, -7.0, -7.0,  -1.0f, .0f,0.0f,
+            -7.0, -7.0, -7.0,  -1.0f, .0f,0.0f,
+            -7.0, -7.0,  7.0,  -1.0f, 0.0f,0.0f,
+            -7.0,  7.0,  7.0,  -1.0f, 0.0f,0.0f,
 
-            5.0,  5.0,  5.0,  1.0f, 0.0f,0.0f,
-            5.0,  5.0, -5.0,  1.0f, .0f,0.0f,
-            5.0, -5.0, -5.0,  1.0f, .0f,0.0f,
-            5.0, -5.0, -5.0,  1.0f, .0f,0.0f,
-            5.0, -5.0,  5.0,  1.0f, 0.0f,0.0f,
-            5.0,  5.0,  5.0,  1.0f, 0.0f,0.0f,
+            7.0,  7.0,  7.0,  1.0f, 0.0f,0.0f,
+            7.0,  7.0, -7.0,  1.0f, .0f,0.0f,
+            7.0, -7.0, -7.0,  1.0f, .0f,0.0f,
+            7.0, -7.0, -7.0,  1.0f, .0f,0.0f,
+            7.0, -7.0,  7.0,  1.0f, 0.0f,0.0f,
+            7.0,  7.0,  7.0,  1.0f, 0.0f,0.0f,
 
-            -5.0, -5.0, -5.0,  0.0f, -1.0f,0.0f,
-            5.0, -5.0, -5.0,  .0f, -1.0f,0.0f,
-            5.0, -5.0,  5.0,  .0f, -1.0f,0.0f,
-            5.0, -5.0,  5.0,  .0f, -1.0f,0.0f,
-            -5.0, -5.0,  5.0,  0.0f, -1.0f,0.0f,
-            -5.0, -5.0, -5.0,  0.0f, -1.0f,0.0f,
+            -7.0, -7.0, -7.0,  0.0f, -1.0f,0.0f,
+            7.0, -7.0, -7.0,  .0f, -1.0f,0.0f,
+            7.0, -7.0,  7.0,  .0f, -1.0f,0.0f,
+            7.0, -7.0,  7.0,  .0f, -1.0f,0.0f,
+            -7.0, -7.0,  7.0,  0.0f, -1.0f,0.0f,
+            -7.0, -7.0, -7.0,  0.0f, -1.0f,0.0f,
 
-            -5.0,  5.0, -5.0,  0.0f, 1.0f,0.0f,
-            5.0,  5.0, -5.0,  .0f, 1.0f,0.0f,
-            5.0,  5.0,  5.0,  .0f, 1.0f,0.0f,
-            5.0,  5.0,  5.0,  .0f, 1.0f,0.0f,
-            -5.0,  5.0,  5.0,  0.0f, 1.0f,0.0f,
-            -5.0,  5.0, -5.0f,  0.0f, 1.0f, 0.0f
+            -7.0,  7.0, -7.0,  0.0f, 1.0f,0.0f,
+            7.0,  7.0, -7.0,  .0f, 1.0f,0.0f,
+            7.0,  7.0,  7.0,  .0f, 1.0f,0.0f,
+            7.0,  7.0,  7.0,  .0f, 1.0f,0.0f,
+            -7.0,  7.0,  7.0,  0.0f, 1.0f,0.0f,
+            -7.0,  7.0, -7.0f,  0.0f, 1.0f, 0.0f
     };
 
 
     float inner_skybox_vertices[] = {
             // positions
-            -5.0f,  5.0f, -5.0f,
-            -5.0f, -5.0f, -5.0f,
-            5.0f, -5.0f, -5.0f,
-            5.0f, -5.0f, -5.0f,
-            5.0f,  5.0f, -5.0f,
-            -5.0f,  5.0f, -5.0f,
+            -7.0f,  7.0f, -7.0f,
+            -7.0f, -7.0f, -7.0f,
+            7.0f, -7.0f, -7.0f,
+            7.0f, -7.0f, -7.0f,
+            7.0f,  7.0f, -7.0f,
+            -7.0f,  7.0f, -7.0f,
 
-            -5.0f, -5.0f,  5.0f,
-            -5.0f, -5.0f, -5.0f,
-            -5.0f,  5.0f, -5.0f,
-            -5.0f,  5.0f, -5.0f,
-            -5.0f,  5.0f,  5.0f,
-            -5.0f, -5.0f,  5.0f,
+            -7.0f, -7.0f,  7.0f,
+            -7.0f, -7.0f, -7.0f,
+            -7.0f,  7.0f, -7.0f,
+            -7.0f,  7.0f, -7.0f,
+            -7.0f,  7.0f,  7.0f,
+            -7.0f, -7.0f,  7.0f,
 
-            5.0f, -5.0f, -5.0f,
-            5.0f, -5.0f,  5.0f,
-            5.0f,  5.0f,  5.0f,
-            5.0f,  5.0f,  5.0f,
-            5.0f,  5.0f, -5.0f,
-            5.0f, -5.0f, -5.0f,
+            7.0f, -7.0f, -7.0f,
+            7.0f, -7.0f,  7.0f,
+            7.0f,  7.0f,  7.0f,
+            7.0f,  7.0f,  7.0f,
+            7.0f,  7.0f, -7.0f,
+            7.0f, -7.0f, -7.0f,
 
-            -5.0f, -5.0f,  5.0f,
-            -5.0f,  5.0f,  5.0f,
-            5.0f,  5.0f,  5.0f,
-            5.0f,  5.0f,  5.0f,
-            5.0f, -5.0f,  5.0f,
-            -5.0f, -5.0f,  5.0f,
+            -7.0f, -7.0f,  7.0f,
+            -7.0f,  7.0f,  7.0f,
+            7.0f,  7.0f,  7.0f,
+            7.0f,  7.0f,  7.0f,
+            7.0f, -7.0f,  7.0f,
+            -7.0f, -7.0f,  7.0f,
 
-            -5.0f,  5.0f, -5.0f,
-            5.0f,  5.0f, -5.0f,
-            5.0f,  5.0f,  5.0f,
-            5.0f,  5.0f,  5.0f,
-            -5.0f,  5.0f,  5.0f,
-            -5.0f,  5.0f, -5.0f,
+            -7.0f,  7.0f, -7.0f,
+            7.0f,  7.0f, -7.0f,
+            7.0f,  7.0f,  7.0f,
+            7.0f,  7.0f,  7.0f,
+            -7.0f,  7.0f,  7.0f,
+            -7.0f,  7.0f, -7.0f,
 
-            -5.0f, -5.0f, -5.0f,
-            -5.0f, -5.0f,  5.0f,
-            5.0f, -5.0f, -5.0f,
-            5.0f, -5.00f, -5.00f,
-            -5.00f, -5.0f,  5.0f,
-            5.0f, -5.0f,  5.0f
+            -7.0f, -7.0f, -7.0f,
+            -7.0f, -7.0f,  7.0f,
+            7.0f, -7.0f, -7.0f,
+            7.0f, -7.00f, -7.00f,
+            -7.00f, -7.0f,  7.0f,
+            7.0f, -7.0f,  7.0f
     };
 
     // skybox
@@ -311,19 +315,31 @@ int main() {
         glm::mat4 view = programState->camera.GetViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
 
+        // cube
         cubeShader.use();
         cubeShader.setMat4("projection", projection);
         cubeShader.setMat4("view", view);
         cubeShader.setMat4("model", model);
         cubeShader.setVec3("cameraPos", programState->camera.Position);
 
-        // cube
         glBindVertexArray(cubeVAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, programState->cubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
+        // model
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.f, 1.0f, 1.0f));
+        diamondShader.use();
+        diamondShader.setMat4("projection", projection);
+        diamondShader.setMat4("view", view);
+        diamondShader.setMat4("model", model);
+
+        stbi_set_flip_vertically_on_load(true);
+        diamond.Draw(diamondShader);
+        stbi_set_flip_vertically_on_load(false);
+        
         //draw skybox in the end
         // main skybox
         glDepthMask(GL_FALSE);
