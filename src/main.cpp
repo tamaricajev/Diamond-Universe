@@ -23,6 +23,7 @@ void processInput(GLFWwindow *window);
 unsigned int loadCubemap(std::vector<std::string> faces);
 //void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
+unsigned int loadTexture(char const * path);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -40,13 +41,19 @@ float lastFrame = 0.0f;
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(.1f, .1f, .1f);
     Camera camera;
-    ProgramState() : camera(glm::vec3(0.0f, 0.0f, 20.0f)) {}
+    Model diamond, pink_diamond, mars;
+    ProgramState() : camera(glm::vec3(0.0f, 0.0f, 20.0f)),
+                    diamond(FileSystem::getPath("resources/objects/diamond/Diamond.obj")),
+                    pink_diamond(FileSystem::getPath("resources/objects/pink_diamond/Diamond.obj")),
+                    mars(FileSystem::getPath("resources/objects/mars/planet.obj")) {}
 
     std::vector<std::string> faces;
     unsigned int cubemapTexture;
 
     std::vector<std::string> inner_faces;
     unsigned int inner_cubemapTexture;
+
+    std::string color;
 };
 
 ProgramState *programState;
@@ -81,8 +88,9 @@ int main() {
         return -1;
     }
 
-
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     programState = new ProgramState;
 
@@ -91,8 +99,8 @@ int main() {
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
     Shader inner_skyboxShader("resources/shaders/inner_skybox.vs", "resources/shaders/inner_skybox.fs");
     Shader diamondShader("resources/shaders/diamond.vs", "resources/shaders/diamond.fs");
-
-    Model diamond(FileSystem::getPath("resources/objects/diamond/Diamond.obj"));
+    Shader transparentShader("resources/shaders/transparent.vs", "resources/shaders/transparent.fs");
+    Shader marsShader("resources/shaders/mars.vs", "resources/shaders/mars.fs");
 
     // coordinate system
     float cube_vertices[] = {
@@ -189,47 +197,58 @@ int main() {
     // skybox
     float skyboxVertices[] = {
             // positions
-            -10.f,  10.f, -10.f,
-            -10.f, -10.f, -10.f,
-            10.f, -10.f, -10.f,
-            10.f, -10.f, -10.f,
-            10.f,  10.f, -10.f,
-            -10.f,  10.f, -10.f,
+            -8.f,  8.f, -8.f,
+            -8.f, -8.f, -8.f,
+            8.f, -8.f, -8.f,
+            8.f, -8.f, -8.f,
+            8.f,  8.f, -8.f,
+            -8.f,  8.f, -8.f,
 
-            -10.f, -10.f,  10.f,
-            -10.f, -10.f, -10.f,
-            -10.f,  10.f, -10.f,
-            -10.f,  10.f, -10.f,
-            -10.f,  10.f,  10.f,
-            -10.f, -10.f,  10.f,
+            -8.f, -8.f,  8.f,
+            -8.f, -8.f, -8.f,
+            -8.f,  8.f, -8.f,
+            -8.f,  8.f, -8.f,
+            -8.f,  8.f,  8.f,
+            -8.f, -8.f,  8.f,
 
-            10.f, -10.f, -10.f,
-            10.f, -10.f,  10.f,
-            10.f,  10.f,  10.f,
-            10.f,  10.f,  10.f,
-            10.f,  10.f, -10.f,
-            10.f, -10.f, -10.f,
+            8.f, -8.f, -8.f,
+            8.f, -8.f,  8.f,
+            8.f,  8.f,  8.f,
+            8.f,  8.f,  8.f,
+            8.f,  8.f, -8.f,
+            8.f, -8.f, -8.f,
 
-            -10.f, -10.f,  10.f,
-            -10.f,  10.f,  10.f,
-            10.f,  10.f,  10.f,
-            10.f,  10.f,  10.f,
-            10.f, -10.f,  10.f,
-            -10.f, -10.f,  10.f,
+            -8.f, -8.f,  8.f,
+            -8.f,  8.f,  8.f,
+            8.f,  8.f,  8.f,
+            8.f,  8.f,  8.f,
+            8.f, -8.f,  8.f,
+            -8.f, -8.f,  8.f,
 
-            -10.f,  10.f, -10.f,
-            10.f,  10.f, -10.f,
-            10.f,  10.f,  10.f,
-            10.f,  10.f,  10.f,
-            -10.f,  10.f,  10.f,
-            -10.f,  10.f, -10.f,
+            -8.f,  8.f, -8.f,
+            8.f,  8.f, -8.f,
+            8.f,  8.f,  8.f,
+            8.f,  8.f,  8.f,
+            -8.f,  8.f,  8.f,
+            -8.f,  8.f, -8.f,
 
-            -10.f, -10.f, -10.f,
-            -10.f, -10.f,  10.f,
-            10.f, -10.f, -10.f,
-            10.f, -10.0f, -10.0f,
-            -10.0f, -10.f,  10.f,
-            10.f, -10.f,  10.f
+            -8.f, -8.f, -8.f,
+            -8.f, -8.f,  8.f,
+            8.f, -8.f, -8.f,
+            8.f, -8.0f, -8.0f,
+            -8.0f, -8.f,  8.f,
+            8.f, -8.f,  8.f
+    };
+
+    float transparentVertices[] = {
+            // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+            1.0f,  0.5f,  0.0f,  1.0f,  0.0f
     };
 
     // cube VBO and VAO
@@ -264,6 +283,19 @@ int main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
+    // transparent VAO
+    unsigned int transparentVAO, transparentVBO;
+    glGenVertexArrays(1, &transparentVAO);
+    glGenBuffers(1, &transparentVBO);
+    glBindVertexArray(transparentVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
     programState->inner_faces =
             {
                     FileSystem::getPath("resources/textures/skybox/right.jpg"),
@@ -294,8 +326,18 @@ int main() {
 
     programState->cubemapTexture = loadCubemap(programState->faces);
 
-//    inner_skyboxShader.use();
+    inner_skyboxShader.use(); // this line is changed --> before comment
     inner_skyboxShader.setInt("skybox", 0);
+
+    vector<glm::vec3> windows
+            {
+                    glm::vec3(-5.5f, 0.0f, -0.48f)
+            };
+
+    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/window.png").c_str());
+
+    transparentShader.use();
+    transparentShader.setInt("texture1", 0);
 
     // render loop
     while (!glfwWindowShouldClose(window)) {
@@ -328,18 +370,58 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
-        // model
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.f, 1.0f, 1.0f));
+        // diamonds models
+
+        model = glm::translate(model, glm::vec3(0.0f, -1.0f, -2.0f));
+        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(2.f, 2.0f, 2.0f));
         diamondShader.use();
         diamondShader.setMat4("projection", projection);
         diamondShader.setMat4("view", view);
         diamondShader.setMat4("model", model);
 
+        if (programState->color == "clear") {
+            stbi_set_flip_vertically_on_load(true);
+            programState->diamond.Draw(diamondShader);
+            stbi_set_flip_vertically_on_load(false);
+        } else if (programState->color == "pink") {
+            stbi_set_flip_vertically_on_load(true);
+            programState->pink_diamond.Draw(diamondShader);
+            stbi_set_flip_vertically_on_load(false);
+        } else {
+            stbi_set_flip_vertically_on_load(true);
+            programState->diamond.Draw(diamondShader);
+            stbi_set_flip_vertically_on_load(false);
+        }
+
+        // mars model
+        glm::mat4 marsModel = glm::mat4(1.0f);
+        marsModel = glm::translate(marsModel, glm::vec3(-2.0f, -1.0f, 0.0f));
+        marsModel = glm::rotate(marsModel, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+        marsModel = glm::scale(marsModel, glm::vec3(0.1f, 0.1f, 0.1f));
+
+        marsShader.use();
+        marsShader.setMat4("projection", projection);
+        marsShader.setMat4("view", view);
+        marsShader.setMat4("model", marsModel);
+
         stbi_set_flip_vertically_on_load(true);
-        diamond.Draw(diamondShader);
+        programState->mars.Draw(marsShader);
         stbi_set_flip_vertically_on_load(false);
-        
+
+        // transparent window
+        transparentShader.use();
+        transparentShader.setMat4("projection", projection);
+        transparentShader.setMat4("view", view);
+        glBindVertexArray(transparentVAO);
+        glBindTexture(GL_TEXTURE_2D, transparentTexture);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-7.0f, 0.0f, 7.1f));
+        model = glm::scale(model, glm::vec3(13.9f, 13.9f, 0.0f));
+        transparentShader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
         //draw skybox in the end
         // main skybox
         glDepthMask(GL_FALSE);
@@ -387,9 +469,13 @@ int main() {
     glDeleteVertexArrays(1, &cubeVAO);
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteVertexArrays(1, &inner_skyboxVAO);
+    glDeleteVertexArrays(1, &transparentVAO);
+
+    glDeleteBuffers(1, &transparentVBO);
     glDeleteBuffers(1, &cubeVBO);
     glDeleteBuffers(1, &skyboxVBO);
     glDeleteBuffers(1, &inner_skyboxVBO);
+
 
     delete programState;
 
@@ -415,6 +501,16 @@ void processInput(GLFWwindow *window) {
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         programState->camera.ProcessKeyboard(RIGHT, deltaTime);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
+        programState->color = "";
+        programState->color = "clear";
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+        programState->color = "";
+        programState->color = "pink";
     }
 }
 
@@ -442,7 +538,6 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     programState->camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     programState->camera.ProcessMouseScroll(yoffset);
 }
@@ -473,6 +568,43 @@ unsigned int loadCubemap(vector<std::string> faces)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
+
+unsigned int loadTexture(char const * path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
 
     return textureID;
 }

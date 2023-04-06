@@ -1,0 +1,13 @@
+# Material Count: 1
+
+newmtl DiamondMaterial
+Ns 157.388399
+Ka 1.000000 1.000000 1.000000
+Kd 0.620425 0.013568 0.800000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_bump -bm 3.000000 DiamondsNorm.png
+map_Kd pink_diamond.jpeg
