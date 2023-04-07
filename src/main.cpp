@@ -41,17 +41,17 @@ float lastFrame = 0.0f;
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(.1f, .1f, .1f);
     Camera camera;
-    Model diamond, pink_diamond, mars;
-    ProgramState() : camera(glm::vec3(0.0f, 0.0f, 20.0f)),
+    Model diamond, pink_diamond, mars, venus, sun;
+
+    ProgramState() : camera(glm::vec3(0.0f, 0.0f, 30.0f)),
                     diamond(FileSystem::getPath("resources/objects/diamond/Diamond.obj")),
                     pink_diamond(FileSystem::getPath("resources/objects/pink_diamond/Diamond.obj")),
-                    mars(FileSystem::getPath("resources/objects/mars/planet.obj")) {}
+                    mars(FileSystem::getPath("resources/objects/mars/planet.obj")),
+                    venus(FileSystem::getPath("resources/objects/venus/planet.obj")),
+                    sun(FileSystem::getPath("resources/objects/sun/planet.obj")) {}
 
-    std::vector<std::string> faces;
-    unsigned int cubemapTexture;
-
-    std::vector<std::string> inner_faces;
-    unsigned int inner_cubemapTexture;
+    std::vector<std::string> faces, inner_faces;
+    unsigned int cubemapTexture, inner_cubemapTexture;
 
     std::string color;
 };
@@ -95,153 +95,102 @@ int main() {
     programState = new ProgramState;
 
     // build and compile shaders
-    Shader cubeShader("resources/shaders/cube.vs", "resources/shaders/cube.fs");
-    Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
-    Shader inner_skyboxShader("resources/shaders/inner_skybox.vs", "resources/shaders/inner_skybox.fs");
-    Shader diamondShader("resources/shaders/diamond.vs", "resources/shaders/diamond.fs");
-    Shader transparentShader("resources/shaders/transparent.vs", "resources/shaders/transparent.fs");
-    Shader marsShader("resources/shaders/mars.vs", "resources/shaders/mars.fs");
+    Shader cubeShader("resources/shaders/cube/cube.vs", "resources/shaders/cube/cube.fs");
+    Shader skyboxShader("resources/shaders/skybox/skybox.vs", "resources/shaders/skybox/skybox.fs");
+    Shader diamondShader("resources/shaders/diamond/diamond.vs", "resources/shaders/diamond/diamond.fs");
+    Shader transparentShader("resources/shaders/window/transparent.vs", "resources/shaders/window/transparent.fs");
+    Shader planetShader("resources/shaders/planet/planet.vs", "resources/shaders/planet/planet.fs");
 
-    // coordinate system
+    // cube
     float cube_vertices[] = {
-            // positions                    // normals
-            -7.0f, -7.0, -7.0,  .0f, 0.0f, -1.0f,
-            7.0f, -7.0, -7.0,  .0f, 0.0f, -1.0f,
-            7.0f,  7.0, -7.0,  .0f, .0f, -1.0f,
-            7.0f,  7.0, -7.0,  .0f, .0f, -1.0f,
-            -7.0f,  7.0, -7.0,  0.0f, .0f, -1.0f,
-            -7.0f, -7.0, -7.0,  0.0f, 0.0f, -1.0f,
+            -0.5f, -0.5, -0.5,  .0f, 0.0f, -1.0f,
+            0.5f, -0.5, -0.5,  .0f, 0.0f, -1.0f,
+            0.5f,  0.5, -0.5,  .0f, .0f, -1.0f,
+            0.5f,  0.5, -0.5,  .0f, .0f, -1.0f,
+            -0.5f,  0.5, -0.5,  0.0f, .0f, -1.0f,
+            -0.5f, -0.5, -0.5,  0.0f, 0.0f, -1.0f,
 
-            -7.0, -7.0,  7.0,  0.0f, 0.0f, 1.0f,
-            7.0, -7.0,  7.0,  .0f, 0.0f, 1.0f,
-            7.0,  7.0,  7.0,  .0f, .0f, 1.0f,
-            7.0,  7.0,  7.0,  .0f, .0f, 1.0f,
-            -7.0,  7.0,  7.0,  0.0f, .0f,1.0f,
-            -7.0, -7.0,  7.0,  0.0f, 0.0f,1.0f,
+            -0.5, -0.5,  0.5,  0.0f, 0.0f, 1.0f,
+            0.5, -0.5,  0.5,  .0f, 0.0f, 1.0f,
+            0.5,  0.5,  0.5,  .0f, .0f, 1.0f,
+            0.5,  0.5,  0.5,  .0f, .0f, 1.0f,
+            -0.5,  0.5,  0.5,  0.0f, .0f,1.0f,
+            -0.5, -0.5,  0.5,  0.0f, 0.0f,1.0f,
 
-            -7.0,  7.0,  7.0,  -1.0f, 0.0f,0.0f,
-            -7.0,  7.0, -7.0,  -1.0f, .0f,0.0f,
-            -7.0, -7.0, -7.0,  -1.0f, .0f,0.0f,
-            -7.0, -7.0, -7.0,  -1.0f, .0f,0.0f,
-            -7.0, -7.0,  7.0,  -1.0f, 0.0f,0.0f,
-            -7.0,  7.0,  7.0,  -1.0f, 0.0f,0.0f,
+            -0.5,  0.5,  0.5,  -1.0f, 0.0f,0.0f,
+            -0.5,  0.5, -0.5,  -1.0f, .0f,0.0f,
+            -0.5, -0.5, -0.5,  -1.0f, .0f,0.0f,
+            -0.5, -0.5, -0.5,  -1.0f, .0f,0.0f,
+            -0.5, -0.5,  0.5,  -1.0f, 0.0f,0.0f,
+            -0.5,  0.5,  0.5,  -1.0f, 0.0f,0.0f,
 
-            7.0,  7.0,  7.0,  1.0f, 0.0f,0.0f,
-            7.0,  7.0, -7.0,  1.0f, .0f,0.0f,
-            7.0, -7.0, -7.0,  1.0f, .0f,0.0f,
-            7.0, -7.0, -7.0,  1.0f, .0f,0.0f,
-            7.0, -7.0,  7.0,  1.0f, 0.0f,0.0f,
-            7.0,  7.0,  7.0,  1.0f, 0.0f,0.0f,
+            0.5,  0.5,  0.5,  1.0f, 0.0f,0.0f,
+            0.5,  0.5, -0.5,  1.0f, .0f,0.0f,
+            0.5, -0.5, -0.5,  1.0f, .0f,0.0f,
+            0.5, -0.5, -0.5,  1.0f, .0f,0.0f,
+            0.5, -0.5,  0.5,  1.0f, 0.0f,0.0f,
+            0.5,  0.5,  0.5,  1.0f, 0.0f,0.0f,
 
-            -7.0, -7.0, -7.0,  0.0f, -1.0f,0.0f,
-            7.0, -7.0, -7.0,  .0f, -1.0f,0.0f,
-            7.0, -7.0,  7.0,  .0f, -1.0f,0.0f,
-            7.0, -7.0,  7.0,  .0f, -1.0f,0.0f,
-            -7.0, -7.0,  7.0,  0.0f, -1.0f,0.0f,
-            -7.0, -7.0, -7.0,  0.0f, -1.0f,0.0f,
+            -0.5, -0.5, -0.5,  0.0f, -1.0f,0.0f,
+            0.5, -0.5, -0.5,  .0f, -1.0f,0.0f,
+            0.5, -0.5,  0.5,  .0f, -1.0f,0.0f,
+            0.5, -0.5,  0.5,  .0f, -1.0f,0.0f,
+            -0.5, -0.5,  0.5,  0.0f, -1.0f,0.0f,
+            -0.5, -0.5, -0.5,  0.0f, -1.0f,0.0f,
 
-            -7.0,  7.0, -7.0,  0.0f, 1.0f,0.0f,
-            7.0,  7.0, -7.0,  .0f, 1.0f,0.0f,
-            7.0,  7.0,  7.0,  .0f, 1.0f,0.0f,
-            7.0,  7.0,  7.0,  .0f, 1.0f,0.0f,
-            -7.0,  7.0,  7.0,  0.0f, 1.0f,0.0f,
-            -7.0,  7.0, -7.0f,  0.0f, 1.0f, 0.0f
+            -0.5,  0.5, -0.5,  0.0f, 1.0f,0.0f,
+            0.5,  0.5, -0.5,  .0f, 1.0f,0.0f,
+            0.5,  0.5,  0.5,  .0f, 1.0f,0.0f,
+            0.5,  0.5,  0.5,  .0f, 1.0f,0.0f,
+            -0.5,  0.5,  0.5,  0.0f, 1.0f,0.0f,
+            -0.5,  0.5, -0.5f,  0.0f, 1.0f, 0.0f
     };
 
+    float skyBox_vertices[] = {
+            -1.0f,  1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
 
-    float inner_skybox_vertices[] = {
-            // positions
-            -7.0f,  7.0f, -7.0f,
-            -7.0f, -7.0f, -7.0f,
-            7.0f, -7.0f, -7.0f,
-            7.0f, -7.0f, -7.0f,
-            7.0f,  7.0f, -7.0f,
-            -7.0f,  7.0f, -7.0f,
+            -1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
 
-            -7.0f, -7.0f,  7.0f,
-            -7.0f, -7.0f, -7.0f,
-            -7.0f,  7.0f, -7.0f,
-            -7.0f,  7.0f, -7.0f,
-            -7.0f,  7.0f,  7.0f,
-            -7.0f, -7.0f,  7.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
 
-            7.0f, -7.0f, -7.0f,
-            7.0f, -7.0f,  7.0f,
-            7.0f,  7.0f,  7.0f,
-            7.0f,  7.0f,  7.0f,
-            7.0f,  7.0f, -7.0f,
-            7.0f, -7.0f, -7.0f,
+            -1.0f, -1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
 
-            -7.0f, -7.0f,  7.0f,
-            -7.0f,  7.0f,  7.0f,
-            7.0f,  7.0f,  7.0f,
-            7.0f,  7.0f,  7.0f,
-            7.0f, -7.0f,  7.0f,
-            -7.0f, -7.0f,  7.0f,
+            -1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f, -1.0f,
 
-            -7.0f,  7.0f, -7.0f,
-            7.0f,  7.0f, -7.0f,
-            7.0f,  7.0f,  7.0f,
-            7.0f,  7.0f,  7.0f,
-            -7.0f,  7.0f,  7.0f,
-            -7.0f,  7.0f, -7.0f,
-
-            -7.0f, -7.0f, -7.0f,
-            -7.0f, -7.0f,  7.0f,
-            7.0f, -7.0f, -7.0f,
-            7.0f, -7.00f, -7.00f,
-            -7.00f, -7.0f,  7.0f,
-            7.0f, -7.0f,  7.0f
-    };
-
-    // skybox
-    float skyboxVertices[] = {
-            // positions
-            -8.f,  8.f, -8.f,
-            -8.f, -8.f, -8.f,
-            8.f, -8.f, -8.f,
-            8.f, -8.f, -8.f,
-            8.f,  8.f, -8.f,
-            -8.f,  8.f, -8.f,
-
-            -8.f, -8.f,  8.f,
-            -8.f, -8.f, -8.f,
-            -8.f,  8.f, -8.f,
-            -8.f,  8.f, -8.f,
-            -8.f,  8.f,  8.f,
-            -8.f, -8.f,  8.f,
-
-            8.f, -8.f, -8.f,
-            8.f, -8.f,  8.f,
-            8.f,  8.f,  8.f,
-            8.f,  8.f,  8.f,
-            8.f,  8.f, -8.f,
-            8.f, -8.f, -8.f,
-
-            -8.f, -8.f,  8.f,
-            -8.f,  8.f,  8.f,
-            8.f,  8.f,  8.f,
-            8.f,  8.f,  8.f,
-            8.f, -8.f,  8.f,
-            -8.f, -8.f,  8.f,
-
-            -8.f,  8.f, -8.f,
-            8.f,  8.f, -8.f,
-            8.f,  8.f,  8.f,
-            8.f,  8.f,  8.f,
-            -8.f,  8.f,  8.f,
-            -8.f,  8.f, -8.f,
-
-            -8.f, -8.f, -8.f,
-            -8.f, -8.f,  8.f,
-            8.f, -8.f, -8.f,
-            8.f, -8.0f, -8.0f,
-            -8.0f, -8.f,  8.f,
-            8.f, -8.f,  8.f
+            -1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f,  1.0f
     };
 
     float transparentVertices[] = {
-            // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
             0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
             0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
             1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
@@ -269,7 +218,7 @@ int main() {
     glGenBuffers(1, &inner_skyboxVBO);
     glBindVertexArray(inner_skyboxVAO);
     glBindBuffer(GL_ARRAY_BUFFER, inner_skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(inner_skybox_vertices), inner_skybox_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyBox_vertices), skyBox_vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
@@ -279,7 +228,7 @@ int main() {
     glGenBuffers(1, &skyboxVBO);
     glBindVertexArray(skyboxVAO);
     glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyBox_vertices), &skyBox_vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
@@ -326,9 +275,6 @@ int main() {
 
     programState->cubemapTexture = loadCubemap(programState->faces);
 
-    inner_skyboxShader.use(); // this line is changed --> before comment
-    inner_skyboxShader.setInt("skybox", 0);
-
     vector<glm::vec3> windows
             {
                     glm::vec3(-5.5f, 0.0f, -0.48f)
@@ -355,13 +301,15 @@ int main() {
 
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f , 100.0f);
         glm::mat4 view = programState->camera.GetViewMatrix();
-        glm::mat4 model = glm::mat4(1.0f);
 
         // cube
+        glm::mat4 cubeModel = glm::mat4(1.0f);
+        cubeModel = glm::scale(cubeModel, glm::vec3(17.0f, 17.0f, 17.0f));
+
         cubeShader.use();
         cubeShader.setMat4("projection", projection);
         cubeShader.setMat4("view", view);
-        cubeShader.setMat4("model", model);
+        cubeShader.setMat4("model", cubeModel);
         cubeShader.setVec3("cameraPos", programState->camera.Position);
 
         glBindVertexArray(cubeVAO);
@@ -371,7 +319,7 @@ int main() {
         glBindVertexArray(0);
 
         // diamonds models
-
+        glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, -1.0f, -2.0f));
         model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::scale(model, glm::vec3(2.f, 2.0f, 2.0f));
@@ -395,18 +343,54 @@ int main() {
         }
 
         // mars model
-        glm::mat4 marsModel = glm::mat4(1.0f);
-        marsModel = glm::translate(marsModel, glm::vec3(-2.0f, -1.0f, 0.0f));
-        marsModel = glm::rotate(marsModel, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
-        marsModel = glm::scale(marsModel, glm::vec3(0.1f, 0.1f, 0.1f));
+        float time = glfwGetTime();
 
-        marsShader.use();
-        marsShader.setMat4("projection", projection);
-        marsShader.setMat4("view", view);
-        marsShader.setMat4("model", marsModel);
+        glm::mat4 marsModel = glm::mat4(1.0f);
+        marsModel = glm::translate(marsModel, glm::vec3(-2.0f * cos(time), -2.0f * cos(time), -4.5f * sin(time) / 2));
+        marsModel = glm::translate(marsModel, glm::vec3(0.0f, 0.0f, -2.0f));
+        marsModel = glm::rotate(marsModel, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+        marsModel = glm::scale(marsModel, glm::vec3(0.08f, 0.08f, 0.08f));
+
+        planetShader.use();
+        planetShader.setMat4("projection", projection);
+        planetShader.setMat4("view", view);
+        planetShader.setMat4("model", marsModel);
 
         stbi_set_flip_vertically_on_load(true);
-        programState->mars.Draw(marsShader);
+        programState->mars.Draw(planetShader);
+        stbi_set_flip_vertically_on_load(false);
+
+        // venus model
+        glm::mat4 venusModel = glm::mat4(1.0f);
+        venusModel = glm::translate(venusModel, glm::vec3(2.0f * cos(time), -2.0f * cos(time), 4.5f * sin(time) / 2));
+        venusModel = glm::translate(venusModel, glm::vec3(.0f, .0f, -2.0f));
+        venusModel = glm::rotate(venusModel, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+        venusModel = glm::scale(venusModel, glm::vec3(0.08f, 0.08f, 0.08f));
+
+        planetShader.use();
+        planetShader.setMat4("projection", projection);
+        planetShader.setMat4("view", view);
+        planetShader.setMat4("model", venusModel);
+
+        stbi_set_flip_vertically_on_load(true);
+        programState->venus.Draw(planetShader);
+        stbi_set_flip_vertically_on_load(false);
+
+
+        // sun model
+        glm::mat4 sunModel = glm::mat4(1.0f);
+        sunModel = glm::translate(sunModel, glm::vec3(2.5f * cos(time + 10), .0f , -4.0f * sin(time) / 2));
+        sunModel = glm::translate(sunModel, glm::vec3(.0f, .0f, -2.0f));
+        sunModel = glm::rotate(sunModel, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+        sunModel = glm::scale(sunModel, glm::vec3(0.08f, 0.08f, 0.08f));
+
+        planetShader.use();
+        planetShader.setMat4("projection", projection);
+        planetShader.setMat4("view", view);
+        planetShader.setMat4("model", sunModel);
+
+        stbi_set_flip_vertically_on_load(true);
+        programState->sun.Draw(planetShader);
         stbi_set_flip_vertically_on_load(false);
 
         // transparent window
@@ -416,11 +400,10 @@ int main() {
         glBindVertexArray(transparentVAO);
         glBindTexture(GL_TEXTURE_2D, transparentTexture);
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-7.0f, 0.0f, 7.1f));
-        model = glm::scale(model, glm::vec3(13.9f, 13.9f, 0.0f));
+        model = glm::translate(model, glm::vec3(-8.45f, 0.0f, 8.6f));
+        model = glm::scale(model, glm::vec3(16.9f, 16.9f, 0.0f));
         transparentShader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-
 
         //draw skybox in the end
         // main skybox
@@ -442,10 +425,10 @@ int main() {
         // inner skybox
         glDepthMask(GL_FALSE);
         glDepthFunc(GL_LEQUAL);
-        inner_skyboxShader.use();
+        skyboxShader.use();
         view = glm::mat4(glm::mat3(programState->camera.GetViewMatrix()));
-        inner_skyboxShader.setMat4("projection", projection);
-        inner_skyboxShader.setMat4("view", view);
+        skyboxShader.setMat4("projection", projection);
+        skyboxShader.setMat4("view", view);
 
         glBindVertexArray(inner_skyboxVAO);
         glActiveTexture(GL_TEXTURE0);
@@ -600,8 +583,7 @@ unsigned int loadTexture(char const * path)
 
         stbi_image_free(data);
     }
-    else
-    {
+    else {
         std::cout << "Texture failed to load at path: " << path << std::endl;
         stbi_image_free(data);
     }
