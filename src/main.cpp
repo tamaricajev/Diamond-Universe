@@ -1,19 +1,15 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 #include <learnopengl/filesystem.h>
 #include <learnopengl/shader.h>
 #include <learnopengl/camera.h>
 #include <learnopengl/model.h>
-
 #include <iostream>
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -21,6 +17,9 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 unsigned int loadCubemap(std::vector<std::string> faces);
+void drawModel(Model obj_model, Shader shader, const std::vector<glm::vec3>& translations, glm::vec3 rotation, glm::vec3 scale, glm::mat4 projection, glm::mat4 view);
+void loadFaces(std::vector<std::string> &faces, const std::string& dirName);
+
 //void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
 unsigned int loadTexture(char const * path);
@@ -51,12 +50,24 @@ struct ProgramState {
                     sun(FileSystem::getPath("resources/objects/sun/planet.obj")) {}
 
     std::vector<std::string> faces, inner_faces;
-    unsigned int cubemapTexture, inner_cubemapTexture;
+    unsigned int cubemapTexture{}, inner_cubemapTexture{};
 
     std::string color;
 };
 
+struct ProgramShader {
+
+    Shader cube, skybox, diamond, window, planet;
+
+    ProgramShader() : cube("resources/shaders/cube/cube.vs", "resources/shaders/cube/cube.fs"),
+                    skybox("resources/shaders/skybox/skybox.vs", "resources/shaders/skybox/skybox.fs"),
+                    diamond("resources/shaders/diamond/diamond.vs", "resources/shaders/diamond/diamond.fs"),
+                    window("resources/shaders/window/transparent.vs", "resources/shaders/window/transparent.fs"),
+                    planet("resources/shaders/planet/planet.vs", "resources/shaders/planet/planet.fs") {}
+};
+
 ProgramState *programState;
+ProgramShader *shader;
 
 int main() {
     glfwInit();
@@ -93,15 +104,8 @@ int main() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     programState = new ProgramState;
+    shader = new ProgramShader;
 
-    // build and compile shaders
-    Shader cubeShader("resources/shaders/cube/cube.vs", "resources/shaders/cube/cube.fs");
-    Shader skyboxShader("resources/shaders/skybox/skybox.vs", "resources/shaders/skybox/skybox.fs");
-    Shader diamondShader("resources/shaders/diamond/diamond.vs", "resources/shaders/diamond/diamond.fs");
-    Shader transparentShader("resources/shaders/window/transparent.vs", "resources/shaders/window/transparent.fs");
-    Shader planetShader("resources/shaders/planet/planet.vs", "resources/shaders/planet/planet.fs");
-
-    // cube
     float cube_vertices[] = {
             -0.5f, -0.5, -0.5,  .0f, 0.0f, -1.0f,
             0.5f, -0.5, -0.5,  .0f, 0.0f, -1.0f,
@@ -200,29 +204,29 @@ int main() {
             1.0f,  0.5f,  0.0f,  1.0f,  0.0f
     };
 
-    // cube VBO and VAO
+
+    // VBOs, VAOs
+    
     unsigned int cubeVBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
     glGenBuffers(1, &cubeVBO);
     glBindVertexArray(cubeVAO);
     glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)nullptr);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // inner skybox VBO and VAO
     unsigned int inner_skyboxVBO, inner_skyboxVAO;
     glGenVertexArrays(1, &inner_skyboxVAO);
     glGenBuffers(1, &inner_skyboxVBO);
     glBindVertexArray(inner_skyboxVAO);
     glBindBuffer(GL_ARRAY_BUFFER, inner_skyboxVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(skyBox_vertices), skyBox_vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
     glEnableVertexAttribArray(0);
 
-    // skybox
     unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
     glGenBuffers(1, &skyboxVBO);
@@ -230,9 +234,8 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(skyBox_vertices), &skyBox_vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
 
-    // transparent VAO
     unsigned int transparentVAO, transparentVBO;
     glGenVertexArrays(1, &transparentVAO);
     glGenBuffers(1, &transparentVBO);
@@ -240,40 +243,22 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)nullptr);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
 
-    programState->inner_faces =
-            {
-                    FileSystem::getPath("resources/textures/skybox/right.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/left.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/top.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/bottom.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/front.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/back.jpg")
-            };
+    loadFaces(programState->inner_faces, "skybox");
+    loadFaces(programState->faces, "inner_skybox");
 
     programState->inner_cubemapTexture = loadCubemap(programState->inner_faces);
-
-    cubeShader.use();
-    cubeShader.setInt("skybox", 0);
-
-    skyboxShader.use();
-    skyboxShader.setInt("skybox", 0);
-
-    programState->faces =
-            {
-                    FileSystem::getPath("resources/textures/inner_skybox/right.jpg"),
-                    FileSystem::getPath("resources/textures/inner_skybox/left.jpg"),
-                    FileSystem::getPath("resources/textures/inner_skybox/top.jpg"),
-                    FileSystem::getPath("resources/textures/inner_skybox/bottom.jpg"),
-                    FileSystem::getPath("resources/textures/inner_skybox/front.jpg"),
-                    FileSystem::getPath("resources/textures/inner_skybox/back.jpg")
-            };
-
     programState->cubemapTexture = loadCubemap(programState->faces);
+
+    shader->cube.use();
+    shader->cube.setInt("skybox", 0);
+
+    shader->skybox.use();
+    shader->skybox.setInt("skybox", 0);
 
     vector<glm::vec3> windows
             {
@@ -282,10 +267,9 @@ int main() {
 
     unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/window.png").c_str());
 
-    transparentShader.use();
-    transparentShader.setInt("texture1", 0);
+    shader->window.use();
+    shader->window.setInt("texture1", 0);
 
-    // render loop
     while (!glfwWindowShouldClose(window)) {
 
         float currentFrame = glfwGetTime();
@@ -306,11 +290,11 @@ int main() {
         glm::mat4 cubeModel = glm::mat4(1.0f);
         cubeModel = glm::scale(cubeModel, glm::vec3(17.0f, 17.0f, 17.0f));
 
-        cubeShader.use();
-        cubeShader.setMat4("projection", projection);
-        cubeShader.setMat4("view", view);
-        cubeShader.setMat4("model", cubeModel);
-        cubeShader.setVec3("cameraPos", programState->camera.Position);
+        shader->cube.use();
+        shader->cube.setMat4("projection", projection);
+        shader->cube.setMat4("view", view);
+        shader->cube.setMat4("model", cubeModel);
+        shader->cube.setVec3("cameraPos", programState->camera.Position);
 
         glBindVertexArray(cubeVAO);
         glActiveTexture(GL_TEXTURE0);
@@ -318,101 +302,69 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
+        // MODELS
+
         // diamonds models
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, -1.0f, -2.0f));
-        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(2.f, 2.0f, 2.0f));
-        diamondShader.use();
-        diamondShader.setMat4("projection", projection);
-        diamondShader.setMat4("view", view);
-        diamondShader.setMat4("model", model);
+        glm::vec3 translation = glm::vec3(0.0f, -1.0f, -2.0f);
+        glm::vec3 rotation = glm::vec3(0.0f, 1.0f, 0.0f);
+        glm::vec3 scale = glm::vec3(2.f, 2.0f, 2.0f);
 
         if (programState->color == "clear") {
-            stbi_set_flip_vertically_on_load(true);
-            programState->diamond.Draw(diamondShader);
-            stbi_set_flip_vertically_on_load(false);
+            drawModel(programState->diamond, shader->diamond, {translation}, rotation, scale, projection, view);
         } else if (programState->color == "pink") {
-            stbi_set_flip_vertically_on_load(true);
-            programState->pink_diamond.Draw(diamondShader);
-            stbi_set_flip_vertically_on_load(false);
+            drawModel(programState->pink_diamond, shader->diamond, {translation}, rotation, scale, projection, view);
         } else {
-            stbi_set_flip_vertically_on_load(true);
-            programState->diamond.Draw(diamondShader);
-            stbi_set_flip_vertically_on_load(false);
+            drawModel(programState->diamond, shader->diamond, {translation}, rotation, scale, projection, view);
         }
 
         // mars model
-        float time = glfwGetTime();
+        double time = glfwGetTime();
 
-        glm::mat4 marsModel = glm::mat4(1.0f);
-        marsModel = glm::translate(marsModel, glm::vec3(-2.0f * cos(time), -2.0f * cos(time), -4.5f * sin(time) / 2));
-        marsModel = glm::translate(marsModel, glm::vec3(0.0f, 0.0f, -2.0f));
-        marsModel = glm::rotate(marsModel, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
-        marsModel = glm::scale(marsModel, glm::vec3(0.08f, 0.08f, 0.08f));
+        translation = glm::vec3(-2.0f * cos(time), -2.0f * cos(time), -4.5f * sin(time) / 2);
+        glm::vec3 translation2 = glm::vec3(0.0f, 0.0f, -2.0f);
+        rotation = glm::vec3(0.0f, 1.0f, 0.0f);
+        scale = glm::vec3(0.08f, 0.08f, 0.08f);
 
-        planetShader.use();
-        planetShader.setMat4("projection", projection);
-        planetShader.setMat4("view", view);
-        planetShader.setMat4("model", marsModel);
-
-        stbi_set_flip_vertically_on_load(true);
-        programState->mars.Draw(planetShader);
-        stbi_set_flip_vertically_on_load(false);
+        drawModel(programState->mars, shader->planet, {translation, translation2}, rotation, scale, projection, view);
 
         // venus model
-        glm::mat4 venusModel = glm::mat4(1.0f);
-        venusModel = glm::translate(venusModel, glm::vec3(2.0f * cos(time), -2.0f * cos(time), 4.5f * sin(time) / 2));
-        venusModel = glm::translate(venusModel, glm::vec3(.0f, .0f, -2.0f));
-        venusModel = glm::rotate(venusModel, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
-        venusModel = glm::scale(venusModel, glm::vec3(0.08f, 0.08f, 0.08f));
+        translation = glm::vec3(2.0f * cos(time), -2.0f * cos(time), 4.5f * sin(time) / 2);
+        translation2 =  glm::vec3(.0f, .0f, -2.0f);
+        rotation = glm::vec3(0.0f, 1.0f, 0.0f);
+        scale = glm::vec3(0.08f, 0.08f, 0.08f);
 
-        planetShader.use();
-        planetShader.setMat4("projection", projection);
-        planetShader.setMat4("view", view);
-        planetShader.setMat4("model", venusModel);
-
-        stbi_set_flip_vertically_on_load(true);
-        programState->venus.Draw(planetShader);
-        stbi_set_flip_vertically_on_load(false);
-
+        drawModel(programState->venus, shader->planet, {translation, translation2}, rotation, scale, projection, view);
 
         // sun model
-        glm::mat4 sunModel = glm::mat4(1.0f);
-        sunModel = glm::translate(sunModel, glm::vec3(2.5f * cos(time + 10), .0f , -4.0f * sin(time) / 2));
-        sunModel = glm::translate(sunModel, glm::vec3(.0f, .0f, -2.0f));
-        sunModel = glm::rotate(sunModel, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
-        sunModel = glm::scale(sunModel, glm::vec3(0.08f, 0.08f, 0.08f));
+        translation = glm::vec3(2.5f * cos(time + 10), .0f , -4.0f * sin(time) / 2);
+        translation2 = glm::vec3(.0f, .0f, -2.0f);
+        rotation = glm::vec3(0.0f, 1.0f, 0.0f);
+        scale = glm::vec3(0.08f, 0.08f, 0.08f);
 
-        planetShader.use();
-        planetShader.setMat4("projection", projection);
-        planetShader.setMat4("view", view);
-        planetShader.setMat4("model", sunModel);
-
-        stbi_set_flip_vertically_on_load(true);
-        programState->sun.Draw(planetShader);
-        stbi_set_flip_vertically_on_load(false);
+        drawModel(programState->sun, shader->planet, {translation, translation2}, rotation, scale, projection, view);
 
         // transparent window
-        transparentShader.use();
-        transparentShader.setMat4("projection", projection);
-        transparentShader.setMat4("view", view);
+        shader->window.use();
+        shader->window.setMat4("projection", projection);
+        shader->window.setMat4("view", view);
+
         glBindVertexArray(transparentVAO);
         glBindTexture(GL_TEXTURE_2D, transparentTexture);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-8.45f, 0.0f, 8.6f));
-        model = glm::scale(model, glm::vec3(16.9f, 16.9f, 0.0f));
-        transparentShader.setMat4("model", model);
+        glm::mat4 windowModel = glm::mat4(1.0f);
+        windowModel = glm::translate(windowModel, glm::vec3(-8.45f, 0.0f, 8.6f));
+        windowModel = glm::scale(windowModel, glm::vec3(16.9f, 16.9f, 0.0f));
+        shader->window.setMat4("model", windowModel);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        //draw skybox in the end
+
+        // SKY_BOXES
         // main skybox
         glDepthMask(GL_FALSE);
         glDepthFunc(GL_LEQUAL);
-        skyboxShader.use();
+        shader->skybox.use();
         view = glm::mat4(glm::mat3(programState->camera.GetViewMatrix()));
-        skyboxShader.setMat4("view", view);
-        skyboxShader.setMat4("projection", projection);
+        shader->skybox.setMat4("view", view);
+        shader->skybox.setMat4("projection", projection);
 
         glBindVertexArray(skyboxVAO);
         glActiveTexture(GL_TEXTURE0);
@@ -425,10 +377,10 @@ int main() {
         // inner skybox
         glDepthMask(GL_FALSE);
         glDepthFunc(GL_LEQUAL);
-        skyboxShader.use();
+        shader->skybox.use();
         view = glm::mat4(glm::mat3(programState->camera.GetViewMatrix()));
-        skyboxShader.setMat4("projection", projection);
-        skyboxShader.setMat4("view", view);
+        shader->skybox.setMat4("projection", projection);
+        shader->skybox.setMat4("view", view);
 
         glBindVertexArray(inner_skyboxVAO);
         glActiveTexture(GL_TEXTURE0);
@@ -497,14 +449,12 @@ void processInput(GLFWwindow *window) {
     }
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
 
-// glfw: whenever the mouse moves, this callback is called
 void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     if (firstMouse) {
         lastX = xpos;
@@ -576,19 +526,49 @@ unsigned int loadTexture(char const * path)
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         stbi_image_free(data);
-    }
-    else {
+    } else {
         std::cout << "Texture failed to load at path: " << path << std::endl;
         stbi_image_free(data);
     }
 
     return textureID;
+}
+
+void drawModel(Model obj_model, Shader m_shader, const std::vector<glm::vec3>& translations, glm::vec3 rotation, glm::vec3 scale, glm::mat4 projection, glm::mat4 view) {
+    glm::mat4 model = glm::mat4(1.0f);
+
+    for (auto &translation : translations) {
+        model = glm::translate(model, translation);
+    }
+
+    model = glm::rotate(model, (float)glfwGetTime(), rotation);
+    model = glm::scale(model, scale);
+
+    m_shader.use();
+    m_shader.setMat4("projection", projection);
+    m_shader.setMat4("view", view);
+    m_shader.setMat4("model", model);
+
+    stbi_set_flip_vertically_on_load(true);
+    obj_model.Draw(m_shader);
+    stbi_set_flip_vertically_on_load(false);
+}
+
+void loadFaces(std::vector<std::string> &faces, const std::string& dirName) {
+    faces = {
+            FileSystem::getPath("resources/textures/" + dirName + "/right.jpg"),
+            FileSystem::getPath("resources/textures/" + dirName + "/left.jpg"),
+            FileSystem::getPath("resources/textures/" + dirName + "/top.jpg"),
+            FileSystem::getPath("resources/textures/" + dirName + "/bottom.jpg"),
+            FileSystem::getPath("resources/textures/" + dirName + "/front.jpg"),
+            FileSystem::getPath("resources/textures/" + dirName + "/back.jpg")
+    };
 }
 
 //void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
