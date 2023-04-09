@@ -1,6 +1,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -19,9 +20,7 @@ void processInput(GLFWwindow *window);
 unsigned int loadCubemap(std::vector<std::string> faces);
 void drawModel(Model obj_model, Shader shader, const std::vector<glm::vec3>& translations, glm::vec3 rotation, glm::vec3 scale, glm::mat4 projection, glm::mat4 view);
 void loadFaces(std::vector<std::string> &faces, const std::string& dirName);
-
-//void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
-
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 unsigned int loadTexture(char const * path);
 
 // settings
@@ -39,10 +38,15 @@ float lastFrame = 0.0f;
 
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(.1f, .1f, .1f);
+    bool ImGuiEnable = false;
     Camera camera;
+    bool CameraMouseMovementUpdateEnabled = true;
+    float diamondScale = 2.0f;
+    float diamondTransparent = 0.4f;
+
     Model diamond, pink_diamond, mars, venus, sun;
 
-    ProgramState() : camera(glm::vec3(0.0f, 0.0f, 30.0f)),
+    ProgramState() : camera(glm::vec3(0.0f, 0.0f, 7.0f)),
                     diamond(FileSystem::getPath("resources/objects/diamond/Diamond.obj")),
                     pink_diamond(FileSystem::getPath("resources/objects/pink_diamond/Diamond.obj")),
                     mars(FileSystem::getPath("resources/objects/mars/planet.obj")),
@@ -53,7 +57,50 @@ struct ProgramState {
     unsigned int cubemapTexture{}, inner_cubemapTexture{};
 
     std::string color;
+
+    void SaveToFile(const std::string filename);
+    void LoadFromFile(const std::string filename);
 };
+
+void ProgramState::SaveToFile(const std::string filename) {
+    std::ofstream out(filename);
+
+    out << clearColor.r << "\n"
+        << clearColor.g << "\n"
+        << clearColor.b << "\n"
+        << ImGuiEnable << "\n"
+        << camera.Position.x << "\n"
+        << camera.Position.y << "\n"
+        << camera.Position.z << "\n"
+        << camera.Front.x << "\n"
+        << camera.Front.y << "\n"
+        << camera.Front.z << "\n"
+        << camera.Pitch << "\n"
+        << camera.Yaw << "\n"
+        << diamondScale << "\n"
+        << diamondTransparent;
+}
+
+void ProgramState::LoadFromFile(const std::string filename) {
+    std::ifstream in(filename);
+
+    if(in) {
+        in  >> clearColor.r
+            >> clearColor.g
+            >> clearColor.b
+            >> ImGuiEnable
+            >> camera.Position.x
+            >> camera.Position.y
+            >> camera.Position.z
+            >> camera.Front.x
+            >> camera.Front.y
+            >> camera.Front.z
+            >> camera.Pitch
+            >> camera.Yaw
+            >> diamondScale
+            >> diamondTransparent;
+    }
+}
 
 struct ProgramShader {
 
@@ -68,6 +115,8 @@ struct ProgramShader {
 
 ProgramState *programState;
 ProgramShader *shader;
+
+void drawImGui(ProgramState *programState);
 
 int main() {
     glfwInit();
@@ -91,6 +140,7 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+    glfwSetKeyCallback(window, key_callback);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -99,12 +149,32 @@ int main() {
         return -1;
     }
 
+    programState = new ProgramState;
+    programState->LoadFromFile("resources/program_state.txt");
+
+    shader = new ProgramShader;
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    if (programState->ImGuiEnable) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    // ImGui Init
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void) io;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330 core");
+
     glEnable(GL_DEPTH_TEST);
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    programState = new ProgramState;
-    shader = new ProgramShader;
 
     float cube_vertices[] = {
             -0.5f, -0.5, -0.5,  .0f, 0.0f, -1.0f,
@@ -206,7 +276,7 @@ int main() {
 
 
     // VBOs, VAOs
-    
+
     unsigned int cubeVBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
     glGenBuffers(1, &cubeVBO);
@@ -260,16 +330,12 @@ int main() {
     shader->skybox.use();
     shader->skybox.setInt("skybox", 0);
 
-    vector<glm::vec3> windows
-            {
-                    glm::vec3(-5.5f, 0.0f, -0.48f)
-            };
-
     unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/window.png").c_str());
 
     shader->window.use();
     shader->window.setInt("texture1", 0);
 
+    // render loop
     while (!glfwWindowShouldClose(window)) {
 
         float currentFrame = glfwGetTime();
@@ -303,11 +369,17 @@ int main() {
         glBindVertexArray(0);
 
         // MODELS
-
         // diamonds models
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+
         glm::vec3 translation = glm::vec3(0.0f, -1.0f, -2.0f);
         glm::vec3 rotation = glm::vec3(0.0f, 1.0f, 0.0f);
-        glm::vec3 scale = glm::vec3(2.f, 2.0f, 2.0f);
+        glm::vec3 scale = glm::vec3(programState->diamondScale);
+
+        shader->diamond.use();
+        shader->diamond.setFloat("diamondTransparent", programState->diamondTransparent);
 
         if (programState->color == "clear") {
             drawModel(programState->diamond, shader->diamond, {translation}, rotation, scale, projection, view);
@@ -317,29 +389,24 @@ int main() {
             drawModel(programState->diamond, shader->diamond, {translation}, rotation, scale, projection, view);
         }
 
+        glDisable(GL_CULL_FACE);
+
         // mars model
         double time = glfwGetTime();
 
         translation = glm::vec3(-2.0f * cos(time), -2.0f * cos(time), -4.5f * sin(time) / 2);
         glm::vec3 translation2 = glm::vec3(0.0f, 0.0f, -2.0f);
-        rotation = glm::vec3(0.0f, 1.0f, 0.0f);
         scale = glm::vec3(0.08f, 0.08f, 0.08f);
 
         drawModel(programState->mars, shader->planet, {translation, translation2}, rotation, scale, projection, view);
 
         // venus model
         translation = glm::vec3(2.0f * cos(time), -2.0f * cos(time), 4.5f * sin(time) / 2);
-        translation2 =  glm::vec3(.0f, .0f, -2.0f);
-        rotation = glm::vec3(0.0f, 1.0f, 0.0f);
-        scale = glm::vec3(0.08f, 0.08f, 0.08f);
 
         drawModel(programState->venus, shader->planet, {translation, translation2}, rotation, scale, projection, view);
 
         // sun model
-        translation = glm::vec3(2.5f * cos(time + 10), .0f , -4.0f * sin(time) / 2);
-        translation2 = glm::vec3(.0f, .0f, -2.0f);
-        rotation = glm::vec3(0.0f, 1.0f, 0.0f);
-        scale = glm::vec3(0.08f, 0.08f, 0.08f);
+        translation = glm::vec3(2.5f * cos(time), .0f , -4.0f * sin(time) / 2);
 
         drawModel(programState->sun, shader->planet, {translation, translation2}, rotation, scale, projection, view);
 
@@ -393,13 +460,15 @@ int main() {
 
         // skybox end
 
+        //ImGui
+
+        if (programState->ImGuiEnable) {
+            drawImGui(programState);
+        }
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-//    ImGui_ImplOpenGL3_Shutdown();
-//    ImGui_ImplGlfw_Shutdown();
-//    ImGui::DestroyContext();
 
     glDeleteVertexArrays(1, &cubeVAO);
     glDeleteVertexArrays(1, &skyboxVAO);
@@ -411,8 +480,15 @@ int main() {
     glDeleteBuffers(1, &skyboxVBO);
     glDeleteBuffers(1, &inner_skyboxVBO);
 
+    programState->SaveToFile("resources/program_state.txt");
 
     delete programState;
+    delete shader;
+
+    // ImGui CleanUp
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;
@@ -468,7 +544,9 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     lastX = xpos;
     lastY = ypos;
 
-    programState->camera.ProcessMouseMovement(xoffset, yoffset);
+    if(!programState->ImGuiEnable) {
+        programState->camera.ProcessMouseMovement(xoffset, yoffset);
+    }
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
@@ -571,6 +649,38 @@ void loadFaces(std::vector<std::string> &faces, const std::string& dirName) {
     };
 }
 
-//void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-//
-//}
+void drawImGui(ProgramState *programState) {
+    // ImGui Frame Init
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+    {
+        ImGui::Begin("Diamons's Universe");
+        ImGui::Text("Dobro dosli na moj projekat iz predmeta Racunarska grafika!\nOvaj projekat ilustruje prirodu sa portalom koji vodi u drugu dimenziju.\n"
+                    "Kad udjete u drugu dimenziju, videcete dijamant koji moze da menja boje.\n"
+                    "Pritiskom na dugme P dijaman ce postati roze, pritiskom na dugme C postace vratice se u prvobitnu, default, boju.\n"
+                    "Ukoliko zelite da iskucite ovaj prozor pritisnite F1. \n(Naravno, ukoliko zelite ponovo da ga ukljucite isto pritisnite F1)\n"
+                    "\n\n\nUkoliko zelite mozete da promenite i velicinu dijamantu:\n\n");
+        ImGui::DragFloat("<- Diamond scale", &programState->diamondScale, 0.01f, 0.0, 2.5);
+        ImGui::Text("\n\nUkoliko zelite mozete da menjate i transparentnost dijamanta:\n\n");
+        ImGui::DragFloat("<- Diamond transparent", &programState->diamondTransparent, 0.005f, 0.0, 1.0);
+        ImGui::End();
+    }
+
+    // ImGui render
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_F1 && action == GLFW_PRESS) {
+        programState->ImGuiEnable = !programState->ImGuiEnable;
+        if (programState->ImGuiEnable) {
+            programState->CameraMouseMovementUpdateEnabled = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+    }
+}
