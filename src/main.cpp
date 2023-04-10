@@ -38,7 +38,8 @@ float lastFrame = 0.0f;
 
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(.1f, .1f, .1f);
-    bool ImGuiEnable = false;
+    bool ImGui1Enable = false;
+    bool ImGui2Enable = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
     float diamondScale = 2.0f;
@@ -68,7 +69,8 @@ void ProgramState::SaveToFile(const std::string filename) {
     out << clearColor.r << "\n"
         << clearColor.g << "\n"
         << clearColor.b << "\n"
-        << ImGuiEnable << "\n"
+        << ImGui1Enable << "\n"
+        << ImGui2Enable << "\n"
         << camera.Position.x << "\n"
         << camera.Position.y << "\n"
         << camera.Position.z << "\n"
@@ -88,7 +90,8 @@ void ProgramState::LoadFromFile(const std::string filename) {
         in  >> clearColor.r
             >> clearColor.g
             >> clearColor.b
-            >> ImGuiEnable
+            >> ImGui1Enable
+            >> ImGui2Enable
             >> camera.Position.x
             >> camera.Position.y
             >> camera.Position.z
@@ -156,7 +159,7 @@ int main() {
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    if (programState->ImGuiEnable) {
+    if (programState->ImGui1Enable) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 
@@ -462,7 +465,7 @@ int main() {
 
         //ImGui
 
-        if (programState->ImGuiEnable) {
+        if (programState->ImGui1Enable || programState->ImGui2Enable) {
             drawImGui(programState);
         }
 
@@ -544,7 +547,7 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     lastX = xpos;
     lastY = ypos;
 
-    if(!programState->ImGuiEnable) {
+    if(!programState->ImGui1Enable && !programState->ImGui2Enable) {
         programState->camera.ProcessMouseMovement(xoffset, yoffset);
     }
 }
@@ -651,21 +654,32 @@ void loadFaces(std::vector<std::string> &faces, const std::string& dirName) {
 
 void drawImGui(ProgramState *programState) {
     // ImGui Frame Init
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 
-    {
-        ImGui::Begin("Diamons's Universe");
-        ImGui::Text("Dobro dosli na moj projekat iz predmeta Racunarska grafika!\nOvaj projekat ilustruje prirodu sa portalom koji vodi u drugu dimenziju.\n"
-                    "Kad udjete u drugu dimenziju, videcete dijamant koji moze da menja boje.\n"
-                    "Pritiskom na dugme P dijaman ce postati roze, pritiskom na dugme C postace vratice se u prvobitnu, default, boju.\n"
+    if (programState->ImGui1Enable) {
+        {
+            ImGui::Begin("Diamons's Universe");
+            ImGui::Text(
+                    "Dobro dosli na moj projekat iz predmeta Racunarska grafika!\nOvaj projekat ilustruje zalazak sunca u kanjonu sa portalom koji vodi u drugu dimenziju.\n"
+                    "Kad udjete u drugu dimenziju, videcete dijamant, koji moze da menja boje.\n"
+                    "Pritiskom na dugme P dijaman ce postati roze, pritiskom na dugme C vratice se u prvobitnu, default, boju.\n"
                     "Ukoliko zelite da iskucite ovaj prozor pritisnite F1. \n(Naravno, ukoliko zelite ponovo da ga ukljucite isto pritisnite F1)\n"
-                    "\n\n\nUkoliko zelite mozete da promenite i velicinu dijamantu:\n\n");
-        ImGui::DragFloat("<- Diamond scale", &programState->diamondScale, 0.01f, 0.0, 2.5);
-        ImGui::Text("\n\nUkoliko zelite mozete da menjate i transparentnost dijamanta:\n\n");
-        ImGui::DragFloat("<- Diamond transparent", &programState->diamondTransparent, 0.005f, 0.0, 1.0);
-        ImGui::End();
+                    "\nUkoliko zelite da promenite neke karakteristike dijamanta kliknite F2.\n");
+            ImGui::End();
+        }
+    }
+
+    if (programState->ImGui2Enable) {
+        {
+            ImGui::Begin("Settings");
+            ImGui::Text("Ovde mozete da promenite velicinu dijamanta.\n\n");
+            ImGui::DragFloat("<- Diamond scale", &programState->diamondScale, 0.01f, 0.0, 2.5);
+            ImGui::Text("\n\nUkoliko zelite mozete da menjate i transparentnost dijamanta:\n\n");
+            ImGui::DragFloat("<- Diamond transparent", &programState->diamondTransparent, 0.005f, 0.0, 1.0);
+            ImGui::End();
+        }
     }
 
     // ImGui render
@@ -675,8 +689,18 @@ void drawImGui(ProgramState *programState) {
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_F1 && action == GLFW_PRESS) {
-        programState->ImGuiEnable = !programState->ImGuiEnable;
-        if (programState->ImGuiEnable) {
+        programState->ImGui1Enable = !programState->ImGui1Enable;
+        if (programState->ImGui1Enable) {
+            programState->CameraMouseMovementUpdateEnabled = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+    }
+
+    if (key == GLFW_KEY_F2 && action == GLFW_PRESS) {
+        programState->ImGui2Enable = !programState->ImGui2Enable;
+        if (programState->ImGui2Enable) {
             programState->CameraMouseMovementUpdateEnabled = false;
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         } else {
