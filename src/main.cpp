@@ -38,16 +38,56 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+struct PointLight {
+    glm::vec3 position;
+
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+
+    float constant;
+    float linear;
+    float quadratic;
+};
+
+struct DirLight {
+    glm::vec3 direction;
+
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
+
+struct SpotLight {
+    glm::vec3 position;
+    glm::vec3 direction;
+    float cutOff;
+    float outerCutOff;
+
+    float constant;
+    float linear;
+    float quadratic;
+
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
+
+void setLightsShader(Shader objShader, PointLight pointLight, DirLight dirLight, SpotLight spotLight);
+
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(.1f, .1f, .1f);
     bool ImGui1Enable = false;
     bool ImGui2Enable = false;
     Camera camera;
-    bool CameraMouseMovementUpdateEnabled = true;
     float diamondScale = 2.0f;
     float diamondTransparent = 0.4f;
 
     Model diamond, pink_diamond, mars, venus, sun;
+
+    PointLight pointLight;
+    DirLight dirLight;
+    SpotLight spotLight;
 
     ProgramState() : camera(glm::vec3(0.0f, 0.0f, 7.0f)),
                     diamond(FileSystem::getPath("resources/objects/diamond/Diamond.obj")),
@@ -61,11 +101,15 @@ struct ProgramState {
 
     std::string color;
 
-    void SaveToFile(const std::string filename);
-    void LoadFromFile(const std::string filename);
+    std::vector<glm::vec3> pointLightsPositions = {
+            glm::vec3(1.0, 2.0, 2.0)
+    };
+
+    void SaveToFile(const std::string& filename) const;
+    void LoadFromFile(const std::string& filename);
 };
 
-void ProgramState::SaveToFile(const std::string filename) {
+void ProgramState::SaveToFile(const std::string& filename) const {
     std::ofstream out(filename);
 
     out << clearColor.r << "\n"
@@ -85,7 +129,7 @@ void ProgramState::SaveToFile(const std::string filename) {
         << diamondTransparent;
 }
 
-void ProgramState::LoadFromFile(const std::string filename) {
+void ProgramState::LoadFromFile(const std::string& filename) {
     std::ifstream in(filename);
 
     if(in) {
@@ -116,6 +160,7 @@ struct ProgramShader {
                     diamond("resources/shaders/diamond/diamond.vs", "resources/shaders/diamond/diamond.fs"),
                     window("resources/shaders/window/transparent.vs", "resources/shaders/window/transparent.fs"),
                     planet("resources/shaders/planet/planet.vs", "resources/shaders/planet/planet.fs") {}
+
 };
 
 ProgramState *programState;
@@ -339,6 +384,36 @@ int main() {
             {{"translation", glm::vec3(-8.45f, .0f, 8.6f)}, {"rotation", glm::vec3(90.0f, 1.0f, .0f)}} // 6th  window
     };
 
+    programState->diamond.SetShaderTextureNamePrefix("material.");
+
+    // lights
+
+    PointLight &pointLight1 = programState->pointLight;
+    pointLight1.ambient = glm::vec3(0.25, 0.20725, 0.40725);
+    pointLight1.diffuse = glm::vec3(1.0, 0.823, 0.829);
+    pointLight1.specular = glm::vec3(0.296648, 0.296648, 0.296648);
+    pointLight1.constant = 1.0f;
+    pointLight1.linear = 0.09f;
+    pointLight1.quadratic = 0.032f;
+
+    DirLight &dirLight = programState->dirLight;
+    dirLight.direction = glm::vec3(-.8f, -.5f, -0.3f);
+    dirLight.ambient = glm::vec3(0.05f, 0.05f, 0.05f);
+    dirLight.diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
+    dirLight.specular = glm::vec3(0.5f, 0.5f, 0.5f);
+
+    SpotLight &spotLight = programState->spotLight;
+    spotLight.position = programState->camera.Position;
+    spotLight.diffuse = programState->camera.Front;
+    spotLight.ambient = glm::vec3(.0f);
+    spotLight.diffuse = glm::vec3(1.0f);
+    spotLight.specular = glm::vec3(1.0f);
+    spotLight.constant = 1.0f;
+    spotLight.linear = 0.09f;
+    spotLight.quadratic = 0.032f;
+    spotLight.cutOff = glm::cos(glm::radians(12.5f));
+    spotLight.outerCutOff = glm::cos(glm::radians(15.0f));
+
     // render loop
     while (!glfwWindowShouldClose(window)) {
 
@@ -378,14 +453,19 @@ int main() {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
 
+        double time = glfwGetTime();
+
         glm::vec3 translation = glm::vec3(0.0f, -1.0f, -2.0f);
         glm::vec3 rotation = glm::vec3(0.0f, 1.0f, 0.0f);
         glm::vec3 scale = glm::vec3(programState->diamondScale);
+
+        setLightsShader(shader->diamond, pointLight1, dirLight, spotLight);
 
         shader->diamond.use();
         shader->diamond.setFloat("diamondTransparent", programState->diamondTransparent);
 
         if (programState->color == "clear") {
+
             drawModel(programState->diamond, shader->diamond, {translation}, rotation, scale, projection, view);
         } else if (programState->color == "pink") {
             drawModel(programState->pink_diamond, shader->diamond, {translation}, rotation, scale, projection, view);
@@ -396,8 +476,6 @@ int main() {
         glDisable(GL_CULL_FACE);
 
         // mars model
-        double time = glfwGetTime();
-
         translation = glm::vec3(-2.0f * cos(time), -2.0f * cos(time), -4.5f * sin(time) / 2);
         glm::vec3 translation2 = glm::vec3(0.0f, 0.0f, -2.0f);
         scale = glm::vec3(0.08f, 0.08f, 0.08f);
@@ -710,10 +788,43 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_F2 && action == GLFW_PRESS) {
         programState->ImGui2Enable = !programState->ImGui2Enable;
         if (programState->ImGui2Enable) {
-            programState->CameraMouseMovementUpdateEnabled = false;
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         } else {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
+}
+
+void setLightsShader(Shader objShader, PointLight pointLight, DirLight dirLight, SpotLight spotLight) {
+    double time = glfwGetTime();
+
+    pointLight.position = glm::vec3(4.0f * cos(time), 4.0f, 4*sin(time));
+
+    objShader.use();
+    objShader.setVec3("pointLight.position",  pointLight.position);
+    objShader.setVec3("pointLight.ambient",  pointLight.ambient);
+    objShader.setVec3("pointLight.diffuse",  pointLight.diffuse);
+    objShader.setVec3("pointLight.specular",  pointLight.specular);
+    objShader.setFloat("pointLight.constant",  pointLight.constant);
+    objShader.setFloat("pointLight.linear",  pointLight.linear);
+    objShader.setFloat("pointLight.quadratic",  pointLight.quadratic);
+
+    objShader.setVec3("dirLight.direction", dirLight.direction);
+    objShader.setVec3("dirLight.ambient", dirLight.ambient);
+    objShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+    objShader.setVec3("dirLight.specular", dirLight.specular);
+
+    objShader.setVec3("spotLight.position", spotLight.position);
+    objShader.setVec3("spotLight.direction", spotLight.direction);
+    objShader.setVec3("spotLight.ambient", spotLight.ambient);
+    objShader.setVec3("spotLight.diffuse", spotLight.diffuse);
+    objShader.setVec3("spotLight.specular", spotLight.specular);
+    objShader.setFloat("spotLight.constant", spotLight.constant);
+    objShader.setFloat("spotLight.linear", spotLight.linear);
+    objShader.setFloat("spotLight.quadratic", spotLight.quadratic);
+    objShader.setFloat("spotLight.cutOff", spotLight.cutOff);
+    objShader.setFloat("spotLight.outerCutOff", spotLight.outerCutOff);
+
+    objShader.setVec3("viewPos",  programState->camera.Position);
+    objShader.setFloat("material.shininess", 64.0f);
 }
