@@ -22,6 +22,8 @@ void drawModel(Model obj_model, Shader shader, const std::vector<glm::vec3>& tra
 void loadFaces(std::vector<std::string> &faces, const std::string& dirName);
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 unsigned int loadTexture(char const * path);
+void drawSkyBox(Shader objShader, unsigned int objVAO, unsigned int texture);
+void drawImGui();
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -289,15 +291,6 @@ int main() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    unsigned int inner_skyboxVBO, inner_skyboxVAO;
-    glGenVertexArrays(1, &inner_skyboxVAO);
-    glGenBuffers(1, &inner_skyboxVBO);
-    glBindVertexArray(inner_skyboxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, inner_skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyBox_vertices), skyBox_vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
-    glEnableVertexAttribArray(0);
-
     unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
     glGenBuffers(1, &skyboxVBO);
@@ -421,7 +414,8 @@ int main() {
 
         drawModel(programState->sun, shader->planet, {translation, translation2}, rotation, scale, projection, view);
 
-        // transparent window
+        // transparent windows
+
         shader->window.use();
         shader->window.setMat4("projection", projection);
         shader->window.setMat4("view", view);
@@ -461,43 +455,16 @@ int main() {
         }
 
         // SKY_BOXES
-        // main skybox
-        glDepthMask(GL_FALSE);
-        glDepthFunc(GL_LEQUAL);
-        shader->skybox.use();
-        view = glm::mat4(glm::mat3(programState->camera.GetViewMatrix()));
-        shader->skybox.setMat4("view", view);
-        shader->skybox.setMat4("projection", projection);
+        // sunset skybox
+        drawSkyBox(shader->skybox, skyboxVAO, programState->cubemapTexture);
 
-        glBindVertexArray(skyboxVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, programState->cubemapTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-        glDepthMask(GL_TRUE);
-        glDepthFunc(GL_LESS);
-
-        // inner skybox
-        glDepthMask(GL_FALSE);
-        glDepthFunc(GL_LEQUAL);
-        shader->skybox.use();
-        view = glm::mat4(glm::mat3(programState->camera.GetViewMatrix()));
-        shader->skybox.setMat4("projection", projection);
-        shader->skybox.setMat4("view", view);
-
-        glBindVertexArray(inner_skyboxVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, programState->inner_cubemapTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-
-        glDepthMask(GL_TRUE);
-        glDepthFunc(GL_LESS);
+        // Universe skybox
+        drawSkyBox(shader->skybox, skyboxVAO, programState->inner_cubemapTexture);
 
         //ImGui
 
         if (programState->ImGui1Enable || programState->ImGui2Enable) {
-            drawImGui(programState);
+            drawImGui();
         }
 
         glfwSwapBuffers(window);
@@ -506,13 +473,11 @@ int main() {
 
     glDeleteVertexArrays(1, &cubeVAO);
     glDeleteVertexArrays(1, &skyboxVAO);
-    glDeleteVertexArrays(1, &inner_skyboxVAO);
     glDeleteVertexArrays(1, &transparentVAO);
 
     glDeleteBuffers(1, &transparentVBO);
     glDeleteBuffers(1, &cubeVBO);
     glDeleteBuffers(1, &skyboxVBO);
-    glDeleteBuffers(1, &inner_skyboxVBO);
 
     programState->SaveToFile("resources/program_state.txt");
 
@@ -529,8 +494,9 @@ int main() {
 }
 
 void processInput(GLFWwindow *window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
+    }
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         programState->camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -683,7 +649,7 @@ void loadFaces(std::vector<std::string> &faces, const std::string& dirName) {
     };
 }
 
-void drawImGui(ProgramState *programState) {
+void drawImGui() {
     // ImGui Frame Init
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -717,6 +683,23 @@ void drawImGui(ProgramState *programState) {
     // ImGui render
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void drawSkyBox(Shader objShader, unsigned int objVAO, unsigned int texture) {
+    glDepthMask(GL_FALSE);
+    glDepthFunc(GL_LEQUAL);
+    objShader.use();
+
+    objShader.setMat4("view", glm::mat4(glm::mat3(programState->camera.GetViewMatrix())));
+    objShader.setMat4("projection", glm::perspective(glm::radians(programState->camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f , 100.0f));
+
+    glBindVertexArray(objVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
 }
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
