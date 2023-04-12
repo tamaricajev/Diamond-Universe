@@ -145,8 +145,6 @@ int main() {
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetKeyCallback(window, key_callback);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD!" << std::endl;
         return -1;
@@ -159,7 +157,7 @@ int main() {
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    if (programState->ImGui1Enable) {
+    if (programState->ImGui2Enable) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 
@@ -338,6 +336,16 @@ int main() {
     shader->window.use();
     shader->window.setInt("texture1", 0);
 
+    // hint: rotation -> glm::vec3(angle, axis, nothing)
+    std::vector<std::map<std::string, glm::vec3>> windows = {
+            {{"translation", glm::vec3(-8.45f, 0.0f, 8.6f)}, {"rotation", glm::vec3(0.0f, 0.0f, 0.0f)}}, // 1st window
+            {{"translation", glm::vec3(-8.45f, 0.0f, 8.6f)}, {"rotation", glm::vec3(90.0f, 2.0f, .0f)}}, // 2nd window
+            {{"translation", glm::vec3(-8.45f, 0.0f, 8.6f)}, {"rotation", glm::vec3(-90.f, 2.0f, .0f)}}, // 3rd window
+            {{"translation", glm::vec3(-8.45f, 0.0f, -8.6f)}, {"rotation", glm::vec3(.0f, 0.0f, .0f)}}, // 4th window
+            {{"translation", glm::vec3(-8.45f, .0f, 8.6f)}, {"rotation", glm::vec3(-90.0f, 1.0f, .0f)}}, // 5th window
+            {{"translation", glm::vec3(-8.45f, .0f, 8.6f)}, {"rotation", glm::vec3(90.0f, 1.0f, .0f)}} // 6th  window
+    };
+
     // render loop
     while (!glfwWindowShouldClose(window)) {
 
@@ -420,12 +428,37 @@ int main() {
 
         glBindVertexArray(transparentVAO);
         glBindTexture(GL_TEXTURE_2D, transparentTexture);
-        glm::mat4 windowModel = glm::mat4(1.0f);
-        windowModel = glm::translate(windowModel, glm::vec3(-8.45f, 0.0f, 8.6f));
-        windowModel = glm::scale(windowModel, glm::vec3(16.9f, 16.9f, 0.0f));
-        shader->window.setMat4("model", windowModel);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
 
+        glm::mat4 windowModel;
+        float angle;
+        float axis;
+        glm::vec3 rotateAxis;
+
+        for (auto &m : windows) {
+            windowModel = glm::mat4(1.0f);
+            for (auto &p: m) {
+                if(p.first == "translation") {
+                    windowModel = glm::translate(windowModel, p.second);
+                } else {
+                    angle = p.second.x;
+                    axis = p.second.y;
+
+                    if (axis == 1.0) {
+                        rotateAxis = glm::vec3(1.0f, .0f, .0f);
+                    } else if (axis == 2.0) {
+                        rotateAxis = glm::vec3(.0f, 1.0f, .0f);
+                    } else {
+                        rotateAxis = glm::vec3(.0f, .0f, 1.0f);
+                    }
+
+                    windowModel = glm::rotate(windowModel, glm::radians(angle), rotateAxis);
+                }
+            }
+
+            windowModel = glm::scale(windowModel, glm::vec3(16.9f, 16.9f, 0.0f));
+            shader->window.setMat4("model", windowModel);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
 
         // SKY_BOXES
         // main skybox
@@ -460,8 +493,6 @@ int main() {
 
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
-
-        // skybox end
 
         //ImGui
 
@@ -662,9 +693,10 @@ void drawImGui(ProgramState *programState) {
         {
             ImGui::Begin("Diamons's Universe");
             ImGui::Text(
-                    "Dobro dosli na moj projekat iz predmeta Racunarska grafika!\nOvaj projekat ilustruje zalazak sunca u kanjonu sa portalom koji vodi u drugu dimenziju.\n"
+                    "Dobro dosli na moj projekat iz predmeta Racunarska grafika!\nOvaj projekat ilustruje zalazak sunca u kanjonu sa portalom koji vodi u drugu dimenziju, u Univerzum.\n"
                     "Kad udjete u drugu dimenziju, videcete dijamant, koji moze da menja boje.\n"
-                    "Pritiskom na dugme P dijaman ce postati roze, pritiskom na dugme C vratice se u prvobitnu, default, boju.\n"
+                    "Pritiskom na dugme P dijaman ce postati roze, pritiskom na dugme C vratice se u prvobitnu, default, boju.\n\n"
+                    "Za kretanje napred, nazad, levo, desno koristite dugmice W, S, A, D. Za zoom koristite mis.\n\n"
                     "Ukoliko zelite da iskucite ovaj prozor pritisnite F1. \n(Naravno, ukoliko zelite ponovo da ga ukljucite isto pritisnite F1)\n"
                     "\nUkoliko zelite da promenite neke karakteristike dijamanta kliknite F2.\n");
             ImGui::End();
@@ -690,12 +722,6 @@ void drawImGui(ProgramState *programState) {
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_F1 && action == GLFW_PRESS) {
         programState->ImGui1Enable = !programState->ImGui1Enable;
-        if (programState->ImGui1Enable) {
-            programState->CameraMouseMovementUpdateEnabled = false;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        } else {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        }
     }
 
     if (key == GLFW_KEY_F2 && action == GLFW_PRESS) {
