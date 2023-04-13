@@ -13,7 +13,10 @@
 `C` - default diamond <br>
 #### Ostale komande:
 `F1` - prozor sa objasnjenjima vezanim za projekat <br>
-`F2` - podesavanja <br>
+`F2` - podesavanja 
+
+## Implementirane oblasti:
+grupa A - Cubemaps
 
 ## Snimak projekta:
 // TODO
