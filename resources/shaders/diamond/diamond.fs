@@ -1,5 +1,9 @@
 #version 330 core
+
 out vec4 FragColor;
+out vec4 BrightColor;
+
+#define NR_POINT_LIGHTS 4
 
 struct PointLight {
     vec3 position;
@@ -48,7 +52,7 @@ in vec3 FragPos;
 
 uniform vec3 viewPos;
 uniform DirLight dirLight;
-uniform PointLight pointLight;
+uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform SpotLight spotLight;
 uniform Material material;
 
@@ -66,13 +70,22 @@ void main()
 
     vec3 result = CalcDirLight(dirLight, norm, viewDir);
     // phase 2: point lights
-    result += CalcPointLight(pointLight, norm, FragPos, viewDir);
+     for(int i = 0; i < NR_POINT_LIGHTS; i++)
+            result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
     // phase 3: spot light
     result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
 
     vec4 texColor = vec4(result, 1.0);
     texColor.a = diamondTransparent;
     FragColor = texColor;
+
+    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+
+    if (brightness > 1.0) {
+        BrightColor = FragColor;
+    } else {
+        BrightColor = vec4(.0f, .0f, .0f, 1.0);
+    }
 }
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
