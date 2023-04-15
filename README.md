@@ -1,6 +1,15 @@
 ## DIAMOND's UNIVERSE
 
-#### Projekat u okviru kursa Računarska grafika na Matematičkom fakultetu. Projekat ilustruje kanjon sa portalom u drugu dimenziju, tj. Univerzum. Unutar Univerzuma se nalazi dijamant, oko kog se krecu planete.
+#### Projekat u okviru kursa Računarska grafika na [Matematičkom fakultetu](http://www.matf.bg.ac.rs/).
+
+### Autor:
+- [Tamara Jevtimijević](https://github.com/tamaricajev) <br>
+
+### Credits:
+- [LearnOpenGL](https://github.com/JoeyDeVries/LearnOpenGL) by
+    [JoeyDeVries](https://github.com/JoeyDeVries/)
+- [project_base](https://github.com/matf-racunarska-grafika/project_base/) by
+    [spaske00](https://github.com/spaske00) (teaching assistant)
 
 ## Komande:
 #### Glavne komande:
@@ -8,19 +17,26 @@
 `S` - nazad <br>
 `A` - levo <br>
 `D` - desno <br>
-#### Komande za promenu boje dijamanta:<br>
+#### Komande dijamanta:<br>
 `P` - pink diamond <br>
 `C` - default diamond <br>
+`B` - bling diamond <br>
 #### Ostale komande:
-`F1` - prozor sa objasnjenjima vezanim za projekat <br>
+`F1` - pocetni prozor (hello window) <br>
 `F2` - podesavanja 
 
 ## Implementirane oblasti:
-grupa A - Cubemaps
+- Obavezne oblasti:
+   - [x] Teme od 1. do 8. nedelje 
+   - [x] Blending
+   - [x] Face culling
+   - [x] Advanced lighting <br>
+- Oblast iz grupe A: <br> 
+   - [x] Cubemaps <br>
+- Oblast iz grupe B: <br>
+   - [x] TODO
 
-## Snimak projekta:
-// TODO
+### [Demo snimak projekta](https://github.com/tamaricajev/Diamond-Universe)
 
-## Fotografije:
-// TODO
+### [Fotografije](https://github.com/tamaricajev/Diamond-Universe)
 
