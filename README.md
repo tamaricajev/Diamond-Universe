@@ -27,12 +27,12 @@
 
 ## Implementirane oblasti:
 - Obavezne oblasti:
-   - [x] Teme od 1. do 8. nedelje 
-   - [x] Blending
-   - [x] Face culling
-   - [x] Advanced lighting <br>
+   - [x] [Teme od 1. do 8. nedelje](https://matf-racunarska-grafika.github.io/materijali/) 
+   - [x] [Blending](https://learnopengl.com/Advanced-OpenGL/Blending)
+   - [x] [Face culling](https://learnopengl.com/Advanced-OpenGL/Face-culling)
+   - [x] [Advanced lighting](https://learnopengl.com/Advanced-Lighting/Advanced-Lighting) <br>
 - Oblast iz grupe A: <br> 
-   - [x] Cubemaps <br>
+   - [x] [Cubemaps](https://learnopengl.com/Advanced-OpenGL/Cubemaps) <br>
 - Oblast iz grupe B: <br>
    - [x] TODO
 
