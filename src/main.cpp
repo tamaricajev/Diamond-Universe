@@ -74,6 +74,7 @@ struct SpotLight {
 };
 
 void setDiamondLightsShader(Shader objShader, PointLight pointLight, DirLight dirLight, SpotLight spotLight);
+void setLightsShader(Shader objShader, PointLight pointLight, DirLight dirLight, SpotLight spotLight, glm::vec3 dirLightDiffuse, glm::vec3 dirLightAmbient);
 
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(.1f, .1f, .1f);
@@ -82,6 +83,9 @@ struct ProgramState {
     Camera camera;
     float diamondScale = 2.0f;
     float diamondTransparent = 0.4f;
+
+    bool bling = false;
+    bool inSpace = false;
 
     Model diamond, pink_diamond, mars, venus, sun;
 
@@ -120,6 +124,7 @@ void ProgramState::SaveToFile(const std::string& filename) const {
         << clearColor.b << "\n"
         << ImGui1Enable << "\n"
         << ImGui2Enable << "\n"
+        << inSpace << "\n"
         << camera.Position.x << "\n"
         << camera.Position.y << "\n"
         << camera.Position.z << "\n"
@@ -141,6 +146,7 @@ void ProgramState::LoadFromFile(const std::string& filename) {
             >> clearColor.b
             >> ImGui1Enable
             >> ImGui2Enable
+            >> inSpace
             >> camera.Position.x
             >> camera.Position.y
             >> camera.Position.z
@@ -388,13 +394,16 @@ int main() {
     };
 
     programState->diamond.SetShaderTextureNamePrefix("material.");
+    programState->mars.SetShaderTextureNamePrefix("material.");
+    programState->venus.SetShaderTextureNamePrefix("material.");
+    programState->sun.SetShaderTextureNamePrefix("material.");
 
     // lights
 
     PointLight &pointLight = programState->pointLight;
     pointLight.ambient = glm::vec3(0.25, 0.20725, 0.40725);
-    pointLight.diffuse = glm::vec3(1.0, 0.823, 0.829);
-    pointLight.specular = glm::vec3(0.296648, 0.296648, 0.296648);
+//    pointLight.diffuse = glm::vec3(1.0, 0.823, 0.829);
+//    pointLight.specular = glm::vec3(0.296648, 0.296648, 0.296648);
     pointLight.constant = 1.0f;
     pointLight.linear = 0.09f;
     pointLight.quadratic = 0.032f;
@@ -402,15 +411,15 @@ int main() {
     DirLight &dirLight = programState->dirLight;
     dirLight.direction = glm::vec3(-.8f, -.5f, -0.3f);
     dirLight.ambient = glm::vec3(0.05f, 0.05f, 0.05f);
-    dirLight.diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
-    dirLight.specular = glm::vec3(0.5f, 0.5f, 0.5f);
+//    dirLight.diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
+//    dirLight.specular = glm::vec3(0.5f, 0.5f, 0.5f);
 
     SpotLight &spotLight = programState->spotLight;
     spotLight.position = programState->camera.Position;
-    spotLight.diffuse = programState->camera.Front;
+    spotLight.direction = programState->camera.Front;
     spotLight.ambient = glm::vec3(.0f);
-    spotLight.diffuse = glm::vec3(1.0f);
-    spotLight.specular = glm::vec3(1.0f);
+//    spotLight.diffuse = glm::vec3(1.0f);
+//    spotLight.specular = glm::vec3(1.0f);
     spotLight.constant = 1.0f;
     spotLight.linear = 0.09f;
     spotLight.quadratic = 0.032f;
@@ -450,6 +459,19 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
+        double a = 17.02 * 0.5;
+
+        if (programState->camera.Position.x >= -a && programState->camera.Position.x <= a
+        && programState->camera.Position.y >= -a && programState->camera.Position.y <= a
+        && programState->camera.Position.z >= -a && programState->camera.Position.z <= a) {
+            drawImGui();
+            programState->inSpace = true;
+            programState->ImGui1Enable = false;
+        } else {
+            programState->inSpace = false;
+//            programState->ImGui1Enable = true;
+        }
+
         // MODELS
         // diamonds models
 
@@ -461,6 +483,24 @@ int main() {
         glm::vec3 translation = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 rotation = glm::vec3(0.0f, 1.0f, 0.0f);
         glm::vec3 scale = glm::vec3(programState->diamondScale);
+
+        // turn on diamond
+
+        if (programState->bling) {
+            dirLight.diffuse = glm::vec3(1.05f);
+            dirLight.specular = glm::vec3(1.05f);
+            spotLight.diffuse = glm::vec3(1.05f);
+            spotLight.specular = glm::vec3(1.05f);
+            pointLight.diffuse = glm::vec3(1.0, 0.823, 0.829);
+            pointLight.specular = glm::vec3(0.296648, 0.296648, 0.296648);
+        } else {
+            dirLight.diffuse = glm::vec3(0.0f);
+            dirLight.specular = glm::vec3(0.0f);
+            spotLight.diffuse = glm::vec3(0.0f);
+            spotLight.specular = glm::vec3(0.0f);
+            pointLight.diffuse = glm::vec3(0.0, 0.0, 0.0);
+            pointLight.specular = glm::vec3(0.0, 0.0, 0.0);
+        }
 
         setDiamondLightsShader(shader->diamond, pointLight, dirLight, spotLight);
 
@@ -483,16 +523,22 @@ int main() {
         glm::vec3 translation2 = glm::vec3(-0.4f, 1.0f, 0.0f);
         scale = glm::vec3(0.08f, 0.08f, 0.08f);
 
+        setLightsShader(shader->planet, pointLight, dirLight, spotLight, glm::vec3(0.4f, 0.4f, 0.4f), glm::vec3(0.05f, 0.05f, 0.05f));
+
         drawModel(programState->mars, shader->planet, {translation, translation2}, rotation, scale, projection, view);
 
         // venus model
         translation = glm::vec3(2.0f * cos(time), -2.0f * cos(time), 5.0f * sin(time) / 2);
+
+        setLightsShader(shader->planet, pointLight, dirLight, spotLight, glm::vec3(2.4f, 0.4f, 0.4f), glm::vec3(0.6f, 0.05f, 0.05f));
 
         drawModel(programState->venus, shader->planet, {translation, translation2}, rotation, scale, projection, view);
 
         // sun model
         translation = glm::vec3(0.f, 2.5f * cos(time) , -4.0f * sin(time) / 2);
         translation2 = glm::vec3(0.1f, 0.5f, .0f);
+
+        setLightsShader(shader->planet, pointLight, dirLight, spotLight, glm::vec3(0.4f, 0.4f, 0.4f), glm::vec3(0.05f, 0.05f, 0.05f));
 
         drawModel(programState->sun, shader->planet, {translation, translation2}, rotation, scale, projection, view);
 
@@ -605,6 +651,7 @@ void processInput(GLFWwindow *window) {
         programState->color = "";
         programState->color = "pink";
     }
+
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
@@ -621,7 +668,7 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     }
 
     float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    float yoffset = lastY - ypos;
 
     lastX = xpos;
     lastY = ypos;
@@ -741,12 +788,9 @@ void drawImGui() {
         {
             ImGui::Begin("Diamons's Universe");
             ImGui::Text(
-                    "Dobro dosli na moj projekat iz predmeta Racunarska grafika!\nOvaj projekat ilustruje zalazak sunca u kanjonu sa portalom koji vodi u drugu dimenziju, u Univerzum.\n"
-                    "Kad udjete u drugu dimenziju, videcete dijamant, koji moze da menja boje.\n"
-                    "Pritiskom na dugme P dijaman ce postati roze, pritiskom na dugme C vratice se u prvobitnu, default, boju.\n\n"
-                    "Za kretanje napred, nazad, levo, desno koristite dugmice W, S, A, D. Za zoom koristite mis.\n\n"
-                    "Ukoliko zelite da iskucite ovaj prozor pritisnite F1. \n(Naravno, ukoliko zelite ponovo da ga ukljucite isto pritisnite F1)\n"
-                    "\nUkoliko zelite da promenite neke karakteristike dijamanta kliknite F2.\n");
+                    "Dobro dosli na moj projekat iz predmeta Racunarska grafika!\nOvaj projekat ilustruje zalazak sunca u kanjonu sa portalom koji vodi u drugu dimenziju, tj. Univerzum.\n"
+                    "Za kretanje napred, nazad, levo, desno koristite dugmice W, S, A, D. Za zoom koristite skrol misa.\n\n"
+                    "Ukoliko zelite da iskucite ovaj prozor pritisnite F1. \n(Naravno, ukoliko zelite ponovo da ga ukljucite isto pritisnite F1)\n");
             ImGui::End();
         }
     }
@@ -758,6 +802,18 @@ void drawImGui() {
             ImGui::DragFloat("<- Diamond scale", &programState->diamondScale, 0.01f, 0.0, 2.2);
             ImGui::Text("\n\nUkoliko zelite mozete da menjate i transparentnost dijamanta:\n\n");
             ImGui::DragFloat("<- Diamond transparent", &programState->diamondTransparent, 0.005f, 0.0, 1.0);
+            ImGui::End();
+        }
+    }
+
+    if (programState->inSpace) {
+        {
+            ImGui::Begin("Hello from Universe!");
+            ImGui::Text("Dobro dosli u Univerzum! Pritisnite dugme B za magiju!\n"
+                        "Ukoliko zelite, mozete da menjate boju dijamantu.\n"
+                        "P -> pink\n"
+                        "C -> default\n"
+                        "Ukoliko zelite mozete da menjate i neke karakteristike dijamanta pritiskom na F2.");
             ImGui::End();
         }
     }
@@ -795,6 +851,14 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         } else {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+    }
+
+    if (key == GLFW_KEY_B && action == GLFW_PRESS) {
+        if (programState->bling) {
+            programState->bling = false;
+        } else {
+            programState->bling = true;
         }
     }
 }
@@ -852,5 +916,61 @@ void setDiamondLightsShader(Shader objShader, PointLight pointLight, DirLight di
     objShader.setFloat("spotLight.outerCutOff", spotLight.outerCutOff);
 
     objShader.setVec3("viewPos",  programState->camera.Position);
-    objShader.setFloat("material.shininess", 70.0f);
+    objShader.setFloat("material.shininess", 64.0f);
+}
+
+void setLightsShader(Shader objShader, PointLight pointLight, DirLight dirLight, SpotLight spotLight, glm::vec3 dirLightDiffuse, glm::vec3 dirLightAmbient) {
+    double time = glfwGetTime();
+
+    objShader.use();
+    objShader.setVec3("pointLights[0].position", glm::vec3(-2.f * cos(time), -2.0f * cos(time), -5.f * sin(time) / 2));
+    objShader.setVec3("pointLights[0].ambient",  glm::vec3(0.05f));
+    objShader.setVec3("pointLights[0].diffuse",  pointLight.diffuse);
+    objShader.setVec3("pointLights[0].specular",  pointLight.specular);
+    objShader.setFloat("pointLights[0].constant",  pointLight.constant);
+    objShader.setFloat("pointLights[0].linear",  pointLight.linear);
+    objShader.setFloat("pointLights[0].quadratic",  pointLight.quadratic);
+
+    objShader.setVec3("pointLights[1].position",  glm::vec3(1.0f * cos(time), -4.0f, 3*sin(time)));
+    objShader.setVec3("pointLights[1].ambient",  glm::vec3(0.05f));
+    objShader.setVec3("pointLights[1].diffuse",  pointLight.diffuse);
+    objShader.setVec3("pointLights[1].specular",  pointLight.specular);
+    objShader.setFloat("pointLights[1].constant",  pointLight.constant);
+    objShader.setFloat("pointLights[1].linear",  pointLight.linear);
+    objShader.setFloat("pointLights[1].quadratic",  pointLight.quadratic);
+
+    objShader.setVec3("pointLights[2].position",  glm::vec3(0.f, 3.5f * cos(time) , -2.0f * sin(time) / 2));
+    objShader.setVec3("pointLights[2].ambient",  pointLight.ambient);
+    objShader.setVec3("pointLights[2].diffuse",  pointLight.diffuse);
+    objShader.setVec3("pointLights[2].specular",  pointLight.specular);
+    objShader.setFloat("pointLights[2].constant",  pointLight.constant);
+    objShader.setFloat("pointLights[2].linear",  pointLight.linear);
+    objShader.setFloat("pointLights[2].quadratic",  pointLight.quadratic);
+
+    objShader.setVec3("pointLights[3].position",  programState->pointLightsPositions[3]);
+    objShader.setVec3("pointLights[3].ambient",  pointLight.ambient);
+    objShader.setVec3("pointLights[3].diffuse",  pointLight.diffuse);
+    objShader.setVec3("pointLights[3].specular",  pointLight.specular);
+    objShader.setFloat("pointLights[3].constant",  pointLight.constant);
+    objShader.setFloat("pointLights[3].linear",  pointLight.linear);
+    objShader.setFloat("pointLights[3].quadratic",  pointLight.quadratic);
+
+    objShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+    objShader.setVec3("dirLight.ambient", dirLightAmbient);
+    objShader.setVec3("dirLight.diffuse", dirLightDiffuse);
+    objShader.setVec3("dirLight.specular", 0.25f, 0.25f, 0.25f);
+
+    objShader.setVec3("spotLight.position", programState->camera.Position);
+    objShader.setVec3("spotLight.direction", programState->camera.Front);
+    objShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+    objShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+    objShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+    objShader.setFloat("spotLight.constant", 1.0f);
+    objShader.setFloat("spotLight.linear", 0.09);
+    objShader.setFloat("spotLight.quadratic", 0.032);
+    objShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+    objShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
+    objShader.setVec3("viewPos",  programState->camera.Position);
+    objShader.setFloat("material.shininess", 32.0f);
 }
