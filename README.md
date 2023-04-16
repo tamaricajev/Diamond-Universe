@@ -37,7 +37,7 @@
 - Oblast iz grupe B: <br>
    - [x] [HDR](https://learnopengl.com/Advanced-Lighting/HDR), [Bloom](https://learnopengl.com/Advanced-Lighting/Bloom)
 
-### [Demo snimak projekta](https://github.com/tamaricajev/Diamond-Universe)
+### [Demo snimak projekta](https://www.youtube.com/watch?v=UaJ7fCLRDBA)
 
 ### [Fotografije](https://github.com/tamaricajev/Diamond-Universe/tree/main/fotografije)
 
