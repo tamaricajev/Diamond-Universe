@@ -21,6 +21,7 @@
 `P` - pink diamond <br>
 `C` - default diamond <br>
 `B` - bling diamond <br>
+`SPACE` - bloom <br>
 #### Ostale komande:
 `F1` - pocetni prozor (hello window) <br>
 `F2` - podesavanja 
