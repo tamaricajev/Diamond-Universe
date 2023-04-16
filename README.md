@@ -39,5 +39,5 @@
 
 ### [Demo snimak projekta](https://github.com/tamaricajev/Diamond-Universe)
 
-### [Fotografije](https://github.com/tamaricajev/Diamond-Universe)
+### [Fotografije](https://github.com/tamaricajev/Diamond-Universe/tree/main/fotografije)
 
