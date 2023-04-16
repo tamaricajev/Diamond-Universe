@@ -35,7 +35,7 @@
 - Oblast iz grupe A: <br> 
    - [x] [Cubemaps](https://learnopengl.com/Advanced-OpenGL/Cubemaps) <br>
 - Oblast iz grupe B: <br>
-   - [x] TODO
+   - [x] [HDR](https://learnopengl.com/Advanced-Lighting/HDR), [Bloom](https://learnopengl.com/Advanced-Lighting/Bloom)
 
 ### [Demo snimak projekta](https://github.com/tamaricajev/Diamond-Universe)
 
