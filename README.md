@@ -1,6 +1,6 @@
 ## DIAMOND's UNIVERSE
 
-#### Projekat u okviru kursa Računarska grafika na [Matematičkom fakultetu](http://www.matf.bg.ac.rs/).
+#### Projekat u okviru kursa [Računarska grafika](http://poincare.matf.bg.ac.rs/~vesna.marinkovic/grafika.html) na [Matematičkom fakultetu](http://www.matf.bg.ac.rs/).
 
 ### Autor:
 - [Tamara Jevtimijević](https://github.com/tamaricajev) <br>
